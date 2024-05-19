@@ -9,9 +9,7 @@ https://python-page-analyzer-ru.hexlet.app/
 
 ## About tool
 
-CLI utility for comparing difference of two files and format diff.
-Publishing only locally (not in PyPI).
-Usage as package and module as well.
+Page Analyzer
 
 ---
 
@@ -25,12 +23,15 @@ Usage as package and module as well.
 ## How to
 
 ```bash
-$ git clone 
-$ poetry install
+$ git clone https://github.com/ivekhov/python-project-83.git
+$ make install
 ```
 
 Start server:
 ```bash
-$ poetry run flask --app page_analyzer:app  --debug  run --port 8000
+$ make start
 ```
 
+## Public web-page:
+
+----
