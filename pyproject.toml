@@ -9,14 +9,14 @@ readme = "README.md"
 python = "^3.10"
 flask = "^3.0.3"
 gunicorn = "^22.0.0"
-
-
-[tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
 pytest-cov = "^5.0.0"
 isort = "^5.13.2"
 flake8 = "^7.0.0"
 python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+
 
 [build-system]
 requires = ["poetry-core"]
