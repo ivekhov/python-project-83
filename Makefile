@@ -25,6 +25,6 @@ selfcheck:
 
 check: selfcheck test lint
 
-build: check
-	poetry build
+build:
+	pip install --upgrade pip && pip install poetry && make install
 
