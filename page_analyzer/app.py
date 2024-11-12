@@ -23,24 +23,22 @@ try:
     conn = psycopg2.connect(DATABASE_URL)
     logging.info("Connection to database established")
 except:
-    logging.error("Can`t establish connection to database")
+    logging.warning("Can`t establish connection to database")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
+# ToDo: 
+# Реализуйте форму ввода адреса на главной странице и обработчик, который добавляет введенную информацию в базу данных
 @app.route('/', methods=['GET', 'POST'])
-def url_new():
-    if request.method == 'POST':
+def index():
+    if request.method == 'GET':
         url = request.form['url']
+        print(url)
         try:
             with conn.cursor() as cursor:
-                cursor.execute("INSERT INTO urls (url) VALUES (%s)", (url,))
+                cursor.execute("INSERT INTO urls (name) VALUES (%s)", (url,))
                 conn.commit()
                 flash('URL successfully added', 'success')
         except Exception as e:
