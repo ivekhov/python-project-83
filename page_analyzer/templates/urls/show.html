@@ -1,15 +1,18 @@
 {% extends "urls/layout.html" %}
 
-{% block content %}
-
+{% block message_flash %}
 {% if messages %}
-  <ul class=flashes>
-  {% for category, message in messages %}
-    <li class="{{ category }}">{{ message }}</li>
-  {% endfor %}
-  </ul>
-{% endif %}
 
+  {% for category, message in messages %}
+    <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+
+{% endif %}
+{% endblock %}
+
+
+
+{% block content %}
 
 <h1>Сайт: {{ url.name }}</h1>
 
@@ -40,7 +43,7 @@
 
 
 <div>
-  <table class="table table-bordered table-hover mt-2" data-test="checks">
+  <table class="table table-bordered table-hover mt-2" data-test="url">
   <thead>
     <tr>
       <th>ID</th>

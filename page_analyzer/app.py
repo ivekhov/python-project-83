@@ -37,31 +37,35 @@ def index():
         url = request.form.get('url', '')
 
         errors = validate(url)
+
+        # ToDo: fix the problem with errors displaying
         if errors:
-            flash(errors, 'danger')
-            return redirect(url_for('index'))
+            flash('URL превышает 255 символов', 'danger')
+            messages = get_flashed_messages(with_categories=True)
+            return render_template(
+                'index.html',
+                messages=messages
+            )
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT name FROM urls WHERE name = %s", (url,))
-                if cursor.fetchone():
-                    flash(f'URL {url} already exists', 'danger')
-                    return redirect(url_for('index'))
+                cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
+                result = cursor.fetchone()
+                if result:
+                    flash('Страница уже существует', 'info')
+                    id = result[0]
+                    return redirect(url_for('url_get', id=id))
 
                 cursor.execute("INSERT INTO urls (name) VALUES (%s)", (url,))
                 conn.commit()
-                flash(f'URL {url} successfully added', 'success')
+                flash('Страница успешно добавлена', 'success')
 
-                messages = get_flashed_messages(with_categories=True)
-                return render_template(
-                    'index.html',
-                    messages=messages
-                )
+                cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
+                id = cursor.fetchone()[0]
+                return redirect(url_for('url_get', id=id))
 
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error adding URL to database: {e}")
-            flash('An error occurred while adding the URL', 'danger')
         return redirect(url_for('index'))
     return render_template('index.html')
 
@@ -69,11 +73,11 @@ def index():
 @app.route('/urls')
 def urls_get():
     messages = get_flashed_messages(with_categories=True)
+
     try:
         with conn.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute("SELECT * FROM urls ORDER BY id DESC")
             urls = cursor.fetchall()
-            messages = get_flashed_messages(with_categories=True)
             return render_template(
                 'urls/index.html',
                 urls=urls,
