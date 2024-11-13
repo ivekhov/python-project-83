@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import os
 
@@ -14,6 +15,7 @@ from flask import (
     session
 )
 import psycopg2
+from psycopg2.extras import DictCursor
 
 
 load_dotenv()
@@ -41,14 +43,10 @@ def index():
 
         try:
             with conn.cursor() as cursor:
-
-                # ToDo: Add URL to the database only if it is not already there
                 cursor.execute("SELECT name FROM urls WHERE name = %s", (url,))
                 if cursor.fetchone():
                     flash(f'URL {url} already exists', 'danger')
                     return redirect(url_for('index'))
-                
-
 
                 cursor.execute("INSERT INTO urls (name) VALUES (%s)", (url,))
                 conn.commit()
@@ -68,41 +66,43 @@ def index():
     return render_template('index.html')
 
 
-# ToDo: Реализуйте вывод всех добавленных URL на отдельной странице /urls и проверьте, что новые записи отображаются первыми
 @app.route('/urls')
 def urls_get():
     messages = get_flashed_messages(with_categories=True)
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT name FROM urls ORDER BY id DESC")
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute("SELECT * FROM urls ORDER BY id DESC")
             urls = cursor.fetchall()
-
-            # ToDo: convert list of tuples to list of strings
-            urls = [url[0] for url in urls]
-
             messages = get_flashed_messages(with_categories=True)
-            return render_template('urls/index.html', urls=urls, messages=messages)
+            return render_template(
+                'urls/index.html',
+                urls=urls,
+                messages=messages
+            )
     except Exception as e:
         logging.error(f"Error getting URLs from database: {e}")
         flash('An error occurred while getting URLs', 'danger')
         return redirect(url_for('index'))
 
 
-# ToDo: Реализуйте вывод конкретного введенного URL на отдельной странице urls/<id>
 @app.route('/urls/<int:id>')
 def url_get(id):
     messages = get_flashed_messages(with_categories=True)
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT name FROM urls WHERE id = %s", (id,))
+            cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
             url = cursor.fetchone()
             if not url:
                 flash(f'URL with id {id} not found', 'danger')
                 return redirect(url_for('index'))
-            url = url[0]
+            url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
 
             messages = get_flashed_messages(with_categories=True)
-            return render_template('urls/show.html', url=url, messages=messages)
+            return render_template(
+                'urls/show.html',
+                url=url,
+                messages=messages
+            )
     except Exception as e:
         logging.error(f"Error getting URL from database: {e}")
         flash('An error occurred while getting URL', 'danger')
