@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 import os
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import (
@@ -16,6 +17,7 @@ from flask import (
 )
 import psycopg2
 from psycopg2.extras import DictCursor
+from validators.url import url as is_url
 
 
 load_dotenv()
@@ -33,7 +35,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('main.html')
+    return render_template('index.html')
 
 
 @app.route('/urls', methods=['GET', 'POST'])
@@ -41,17 +43,20 @@ def urls_get():
 
     url = ''
     if request.method == 'POST':
-        url = request.form.get('url', '')
+        url_raw = request.form.get('url', '')
         logging.warning(f"URL: {url} received")
+        parsed = urlparse(url_raw)
+        url = f"{parsed.scheme}://{parsed.hostname}"
+
         errors = validate(url)
 
         if errors:
-            flash('URL превышает 255 символов', 'danger')
+            flash(errors[0], 'danger')
             messages = get_flashed_messages(with_categories=True)
             return render_template(
-                'main.html',
+                'index.html',
                 messages=messages,
-                url=url
+                url=url_raw
             )
 
         try:
@@ -73,7 +78,7 @@ def urls_get():
 
         except Exception as e:
             conn.rollback()
-        return redirect(url_for('main'))
+        return redirect(url_for('index'))
 
 
     if request.method == 'GET':
@@ -83,14 +88,14 @@ def urls_get():
                 cursor.execute("SELECT * FROM urls ORDER BY id DESC")
                 urls = cursor.fetchall()
                 return render_template(
-                    'index.html',
+                    'list.html',
                     urls=urls,
                     messages=messages
                 )
         except Exception as e:
             logging.error(f"Error getting URLs from database: {e}")
             flash('An error occurred while getting URLs', 'danger')
-            return redirect(url_for('main'))
+            return redirect(url_for('index'))
 
 
 
@@ -103,7 +108,7 @@ def url_get(id):
             url = cursor.fetchone()
             if not url:
                 flash(f'URL with id {id} not found', 'danger')
-                return redirect(url_for('main'))
+                return redirect(url_for('index'))
             url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
 
             messages = get_flashed_messages(with_categories=True)
@@ -115,15 +120,17 @@ def url_get(id):
     except Exception as e:
         logging.error(f"Error getting URL from database: {e}")
         flash('An error occurred while getting URL', 'danger')
-        return redirect(url_for('main'))
+        return redirect(url_for('index'))
 
 
 def validate(url):
     errors = []
-    if not url:
-        errors.append('URL is required')
+    if not is_url(url):
+        errors.append('Это не URL')
+        return errors
     if len(url) > 255:
-        errors.append('URL must be less than 255 characters')
+        errors.append('URL превышает 255 символов')
+        return errors
     return errors
     # example of error url:
     # https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p/bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1
