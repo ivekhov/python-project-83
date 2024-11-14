@@ -22,10 +22,45 @@ Page Analyzer
 ----
 ## How to
 
+
+Install project: 
 ```bash
 $ git clone https://github.com/ivekhov/python-project-83.git
 $ make install
 ```
+
+First time setup:
+
+```bash:
+$ export DATABASE_URL=postgresql://janedoe:mypassword@localhost:5432/mydb
+$ chmod +x ./build.sh
+```
+
+
+Build project:
+
+```bash
+$ make build
+```
+
+
+Starting server locally:
+
+```bash
+
+# start server:
+$ make start
+
+# or:
+
+# If port 8080 is in use, kill it:
+$ lsof -ti :8080 | xargs kill -9
+
+$ poetry run gunicorn -w 5 -b 0.0.0.0:8080 page_analyzer:app
+```
+
+
+
 
 Start server:
 ```bash
@@ -96,15 +131,5 @@ https://ru.hexlet.io/projects/83/members/39478?step=3
 docker exec -it postgres-container psql -U postgres -d hexlet
 ```
 
-
-## Starting:
-```bash
-
-# If port 8080 is in use, kill it:
-lsof -ti :8080 | xargs kill -9
-
-# start server:
-poetry run gunicorn -w 5 -b 0.0.0.0:8080 page_analyzer:app
-```
 
     

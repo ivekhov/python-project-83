@@ -23,8 +23,8 @@ lint:
 selfcheck:
 	poetry check
 
-check: selfcheck test lint
+check:
+	selfcheck test lint
 
 build:
-	pip install --upgrade pip && pip install poetry && make install
-
+	./build.sh
