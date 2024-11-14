@@ -33,18 +33,25 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    return render_template('main.html')
+
+
+@app.route('/urls', methods=['GET', 'POST'])
+def urls_get():
+
+    url = ''
     if request.method == 'POST':
         url = request.form.get('url', '')
-
+        logging.warning(f"URL: {url} received")
         errors = validate(url)
 
-        # ToDo: fix the problem with errors displaying
         if errors:
             flash('URL превышает 255 символов', 'danger')
             messages = get_flashed_messages(with_categories=True)
             return render_template(
-                'index.html',
-                messages=messages
+                'main.html',
+                messages=messages,
+                url=url
             )
 
         try:
@@ -66,27 +73,25 @@ def index():
 
         except Exception as e:
             conn.rollback()
-        return redirect(url_for('index'))
-    return render_template('index.html')
+        return redirect(url_for('main'))
 
 
-@app.route('/urls')
-def urls_get():
-    messages = get_flashed_messages(with_categories=True)
+    if request.method == 'GET':
+        messages = get_flashed_messages(with_categories=True)
+        try:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
+                cursor.execute("SELECT * FROM urls ORDER BY id DESC")
+                urls = cursor.fetchall()
+                return render_template(
+                    'index.html',
+                    urls=urls,
+                    messages=messages
+                )
+        except Exception as e:
+            logging.error(f"Error getting URLs from database: {e}")
+            flash('An error occurred while getting URLs', 'danger')
+            return redirect(url_for('main'))
 
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            cursor.execute("SELECT * FROM urls ORDER BY id DESC")
-            urls = cursor.fetchall()
-            return render_template(
-                'urls/index.html',
-                urls=urls,
-                messages=messages
-            )
-    except Exception as e:
-        logging.error(f"Error getting URLs from database: {e}")
-        flash('An error occurred while getting URLs', 'danger')
-        return redirect(url_for('index'))
 
 
 @app.route('/urls/<int:id>')
@@ -98,19 +103,19 @@ def url_get(id):
             url = cursor.fetchone()
             if not url:
                 flash(f'URL with id {id} not found', 'danger')
-                return redirect(url_for('index'))
+                return redirect(url_for('main'))
             url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
 
             messages = get_flashed_messages(with_categories=True)
             return render_template(
-                'urls/show.html',
+                'show.html',
                 url=url,
                 messages=messages
             )
     except Exception as e:
         logging.error(f"Error getting URL from database: {e}")
         flash('An error occurred while getting URL', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('main'))
 
 
 def validate(url):
