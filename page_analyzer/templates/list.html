@@ -33,12 +33,8 @@
           <td>
             <a href="{{ url_for('url_get', id=url.id)}}">{{ url.name }}</a>
           </td>
-
-          <!-- <td>{{ url.last_checked }}</td> -->  
-          <!-- <td>{{ url.response_code }}</td> -->
+          <td>{{ url.last_checked if url.last_checked else '' }}</td>  
           <td></td>
-          <td></td>
-
         </tr>
         {% endfor %}
       

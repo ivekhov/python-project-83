@@ -84,7 +84,17 @@ def urls_get():
         messages = get_flashed_messages(with_categories=True)
         try:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
-                cursor.execute("SELECT * FROM urls ORDER BY id DESC")
+                sql = """
+                SELECT 
+                    u.id AS id, 
+                    u.name AS name,
+                    TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked
+                FROM urls AS u 
+                    LEFT JOIN url_checks AS ch ON ch.url_id = u.id
+                GROUP BY 1, 2
+                ORDER BY 1 DESC;
+                """
+                cursor.execute(sql)
                 urls = cursor.fetchall()
                 return render_template(
                     'list.html',
