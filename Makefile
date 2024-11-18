@@ -8,6 +8,9 @@ PORT ?= 8000
 start:
 	poetry run gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
 
+stop:
+	lsof -ti :$(PORT) | xargs kill -9
+
 test:
 	poetry run pytest -vv
 

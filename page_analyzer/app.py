@@ -16,7 +16,7 @@ from flask import (
     session
 )
 import psycopg2
-from psycopg2.extras import DictCursor
+from psycopg2.extras import DictCursor, RealDictCursor
 from validators.url import url as is_url
 
 
@@ -80,7 +80,6 @@ def urls_get():
             conn.rollback()
         return redirect(url_for('index'))
 
-
     if request.method == 'GET':
         messages = get_flashed_messages(with_categories=True)
         try:
@@ -96,7 +95,6 @@ def urls_get():
             logging.error(f"Error getting URLs from database: {e}")
             flash('An error occurred while getting URLs', 'danger')
             return redirect(url_for('index'))
-
 
 
 @app.route('/urls/<int:id>')
@@ -126,7 +124,7 @@ def url_get(id):
 def validate(url):
     errors = []
     if not is_url(url):
-        errors.append('Это не URL')
+        errors.append('Некорректный URL')
         return errors
     if len(url) > 255:
         errors.append('URL превышает 255 символов')
@@ -134,6 +132,52 @@ def validate(url):
     return errors
     # example of error url:
     # https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p/bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1
+
+
+@app.route('/urls/<int:id>/checks', methods=['POST'])
+def checks_post(id):
+    messages = get_flashed_messages(with_categories=True)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("INSERT INTO url_checks (url_id) VALUES (%s)", (id,))
+            conn.commit()
+            flash('Проверка успешно добавлена', 'success')
+
+            cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
+            urls_raw = cursor.fetchall()
+           
+            urls_checks = []
+            for url_check in urls_raw:
+                urls_checks.append(
+                    {
+                        'id': url_check[0],
+                        'created_at': url_check[1]
+                    }
+                )
+            logging.info(f"checks: {urls_checks}")
+
+            cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
+            url = cursor.fetchone()
+            if not url:
+                flash(f'URL with id {id} not found', 'danger')
+                return redirect(url_for('index'))
+            url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
+
+            return render_template(
+                'show.html',
+                id=id,
+                url_checks=urls_checks,
+                messages=messages,
+                url=url
+
+            )
+        
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"Error creating check: {e}")
+        flash('An error occurred while creating check', 'danger')
+        return redirect(url_for('url_get', id=id))
+
 
 
 if __name__ == "__main__":
