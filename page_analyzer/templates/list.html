@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 
-{% block message_flash %}
+<!-- {% block message_flash %}
   {% if messages %}
 
     {% for category, message in messages %}
@@ -9,7 +9,7 @@
     {% endfor %}
 
   {% endif %}
-{% endblock %}
+{% endblock %} -->
 
 
 {% block content %}
@@ -34,7 +34,7 @@
             <a href="{{ url_for('url_get', id=url.id)}}">{{ url.name }}</a>
           </td>
           <td>{{ url.last_checked if url.last_checked else '' }}</td>  
-          <td></td>
+          <td>{{ url.status_code if url.status_code else '' }}</td>
         </tr>
         {% endfor %}
       

@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+import requests
 import os
 from urllib.parse import urlparse
 
@@ -85,21 +86,29 @@ def urls_get():
         try:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 sql = """
-                SELECT 
-                    u.id AS id, 
-                    u.name AS name,
-                    TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked
-                FROM urls AS u 
-                    LEFT JOIN url_checks AS ch ON ch.url_id = u.id
-                GROUP BY 1, 2
-                ORDER BY 1 DESC;
-                """
+                    WITH cte AS (
+                        SELECT 
+                            u.id as id,
+                            u.name AS name,
+                        TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked, 
+                        MAX(ch.id) as last_check_id
+                        FROM urls AS u 
+                            LEFT JOIN url_checks AS ch ON ch.url_id = u.id
+                        GROUP BY 1, 2
+                        ORDER BY 1 DESC
+                    ) SELECT 
+                        cte.id as id,
+                        cte.name as name,
+                        cte.last_checked as last_checked,
+                        cheks.status_code as status_code
+                    FROM cte LEFT JOIN url_checks as cheks ON cte.last_check_id = cheks.id;
+                    """
                 cursor.execute(sql)
                 urls = cursor.fetchall()
                 return render_template(
                     'list.html',
                     urls=urls,
-                    messages=messages
+                    # messages=messages
                 )
         except Exception as e:
             logging.error(f"Error getting URLs from database: {e}")
@@ -112,19 +121,44 @@ def url_get(id):
     messages = get_flashed_messages(with_categories=True)
     try:
         with conn.cursor() as cursor:
+
+            # info about url
             cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
             url = cursor.fetchone()
-            if not url:
-                flash(f'URL with id {id} not found', 'danger')
-                return redirect(url_for('index'))
-            url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
+            url = {
+                'id': url[0], 
+                'name': url[1],
+                'created_at': datetime.strftime(url[2], '%Y-%m-%d')
+            }
+            logging.warning(f"url: {url}")
 
-            messages = get_flashed_messages(with_categories=True)
-            return render_template(
-                'show.html',
-                url=url,
-                messages=messages
-            )
+            # url_checks
+            sql = f"""
+            SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code
+            FROM url_checks 
+            WHERE url_id = {id} AND status_code IS NOT NULL 
+            ORDER BY id DESC;
+            """
+            cursor.execute(sql)
+            urls_raw = cursor.fetchall()
+
+            urls_checks = []
+            for check in urls_raw:
+                urls_checks.append(
+                    {
+                        'id': check[0],
+                        'created_at': check[1],
+                        'status_code': check[2]
+                    }
+                )
+            logging.warning(f"urls_checks: {urls_checks}")
+
+        return render_template(
+            'show.html',
+            url=url,
+            messages=messages,
+            urls_checks=urls_checks
+        )
     except Exception as e:
         logging.error(f"Error getting URL from database: {e}")
         flash('An error occurred while getting URL', 'danger')
@@ -149,11 +183,25 @@ def checks_post(id):
     messages = get_flashed_messages(with_categories=True)
     try:
         with conn.cursor() as cursor:
-            cursor.execute("INSERT INTO url_checks (url_id) VALUES (%s)", (id,))
+            cursor.execute("SELECT name FROM urls WHERE id = %s", (id,))
+            url = cursor.fetchone()[0]
+            
+            try:
+                url_request = requests.get(url)
+                url_request.raise_for_status
+                status_code = url_request.status_code
+            except requests.exceptions.RequestException as e:
+                logging.error(f"Error checking URL: {e}")
+                flash('Произошла ошибка при проверке', 'danger')
+                return redirect(url_for('url_get', id=id))
+
+            cursor.execute("INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s)", 
+                           (id, status_code)
+            )
             conn.commit()
             flash('Проверка успешно добавлена', 'success')
 
-            cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
+            cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
             urls_raw = cursor.fetchall()
            
             urls_checks = []
@@ -161,32 +209,23 @@ def checks_post(id):
                 urls_checks.append(
                     {
                         'id': url_check[0],
-                        'created_at': url_check[1]
+                        'created_at': url_check[1],
+                        'status_code': url_check[2]
                     }
                 )
             logging.info(f"checks: {urls_checks}")
 
             cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
             url = cursor.fetchone()
-            if not url:
-                flash(f'URL with id {id} not found', 'danger')
-                return redirect(url_for('index'))
             url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
-
-            return render_template(
-                'show.html',
-                id=id,
-                url_checks=urls_checks,
-                messages=messages,
-                url=url
-
-            )
         
     except Exception as e:
         conn.rollback()
         logging.error(f"Error creating check: {e}")
-        flash('An error occurred while creating check', 'danger')
+        flash('Произошла ошибка при проверкеk', 'danger')
         return redirect(url_for('url_get', id=id))
+
+    return redirect(url_for('url_get', id=id))
 
 
 
