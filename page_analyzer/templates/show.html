@@ -58,9 +58,9 @@
       <tr>
         <td>{{ url_check.id }}</td>
         <td>{{ url_check.status_code }}</td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>{{ url_check.h1 if url_check.h1 else ''}}</td>
+        <td>{{ url_check.title if url_check.title else ''}}</td>
+        <td>{{ url_check.description if url_check.description else ''}}</td>
         <td>{{ url_check.created_at }}</td>
       </tr>
       {% endfor %}

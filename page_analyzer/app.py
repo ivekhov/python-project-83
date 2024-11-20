@@ -4,6 +4,7 @@ import requests
 import os
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -134,7 +135,7 @@ def url_get(id):
 
             # url_checks
             sql = f"""
-            SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code
+            SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description 
             FROM url_checks 
             WHERE url_id = {id} AND status_code IS NOT NULL 
             ORDER BY id DESC;
@@ -148,7 +149,10 @@ def url_get(id):
                     {
                         'id': check[0],
                         'created_at': check[1],
-                        'status_code': check[2]
+                        'status_code': check[2],
+                        'h1': check[3],
+                        'title': check[4],
+                        'description': check[5]
                     }
                 )
             logging.warning(f"urls_checks: {urls_checks}")
@@ -187,21 +191,32 @@ def checks_post(id):
             url = cursor.fetchone()[0]
             
             try:
-                url_request = requests.get(url)
-                url_request.raise_for_status
-                status_code = url_request.status_code
+                response = requests.get(url)
+                response.raise_for_status
+                status_code = response.status_code
+
+                soup = BeautifulSoup(response.content, 'html.parser')
+                h1_tag = soup.find('h1')
+                h1_text = h1_tag.get_text(strip=True) if h1_tag else None
+
+                title_tag = soup.find('title')
+                title_text = title_tag.get_text(strip=True) if title_tag else None
+
+                meta_description_tag = soup.find('meta', attrs={'name': 'description'})
+                meta_description_text = meta_description_tag.get('content').strip() if meta_description_tag else None
+
             except requests.exceptions.RequestException as e:
                 logging.error(f"Error checking URL: {e}")
                 flash('Произошла ошибка при проверке', 'danger')
                 return redirect(url_for('url_get', id=id))
 
-            cursor.execute("INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s)", 
-                           (id, status_code)
+            cursor.execute("INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)", 
+                           (id, status_code, h1_text, title_text, meta_description_text)
             )
             conn.commit()
             flash('Проверка успешно добавлена', 'success')
 
-            cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
+            cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
             urls_raw = cursor.fetchall()
            
             urls_checks = []
@@ -210,23 +225,20 @@ def checks_post(id):
                     {
                         'id': url_check[0],
                         'created_at': url_check[1],
-                        'status_code': url_check[2]
+                        'status_code': url_check[2],
+                        'h1': url_check[3],
+                        'title': url_check[4],
+                        'description': url_check[5]
                     }
                 )
-            logging.info(f"checks: {urls_checks}")
-
-            cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
-            url = cursor.fetchone()
-            url = {'id': url[0], 'name': url[1], 'created_at': datetime.strftime(url[2], '%Y-%m-%d')}
         
     except Exception as e:
         conn.rollback()
         logging.error(f"Error creating check: {e}")
-        flash('Произошла ошибка при проверкеk', 'danger')
+        flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('url_get', id=id))
 
     return redirect(url_for('url_get', id=id))
-
 
 
 if __name__ == "__main__":
