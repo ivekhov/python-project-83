@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-
-# Ensure the DATABASE_URL environment variable is set
-if [ -z "$DATABASE_URL" ]; then
-    echo "Error: DATABASE_URL is not set."
-    exit 1
-fi
-
 # Postgres позволяет подключиться к удаленной базе указав ссылку на нее после флага -d
 # ссылка подгрузится из переменной окружения, которую нам нужно будет указать на сервисе деплоя
 # дальше мы загружаем в поключенную базу наш sql-файл с таблицами
