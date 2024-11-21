@@ -1,24 +1,24 @@
-from datetime import datetime
 import logging
-import requests
 import os
+from datetime import datetime
+from typing import Union
 from urllib.parse import urlparse
 
+import psycopg2
+import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
     Flask,
     flash,
     get_flashed_messages,
-    make_response,
     redirect,
     render_template,
+    Response,
     request,
-    url_for,
-    session
+    url_for
 )
-import psycopg2
-from psycopg2.extras import DictCursor, RealDictCursor
+from psycopg2.extras import DictCursor
 from validators.url import url as is_url
 
 
@@ -36,13 +36,22 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+def index() -> Response:
+    """Render the index page.
+
+    Returns:
+        Response: The rendered index page.
+    """    
     return render_template('index.html')
 
 
 @app.route('/urls', methods=['GET', 'POST'])
-def urls_get():
+def urls_get() -> Union[Response, str]:
+    """Handle URL submission and display the list of URLs.
 
+    Returns:
+        Union[Response, str]: The rendered template or a redirect response.
+    """
     url = ''
     if request.method == 'POST':
         url_raw = request.form.get('url', '')
@@ -75,11 +84,13 @@ def urls_get():
                 flash('Страница успешно добавлена', 'success')
 
                 cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
-                id = cursor.fetchone()[0]
-                return redirect(url_for('url_get', id=id))
+                url_id = cursor.fetchone()[0]
+                return redirect(url_for('url_get', id=url_id))
 
         except Exception as e:
             conn.rollback()
+            logging.error(f"Error adding URL to database: {e}")
+            flash('An error occurred while adding the URL', 'danger')
         return redirect(url_for('index'))
 
     if request.method == 'GET':
@@ -109,7 +120,6 @@ def urls_get():
                 return render_template(
                     'list.html',
                     urls=urls,
-                    # messages=messages
                 )
         except Exception as e:
             logging.error(f"Error getting URLs from database: {e}")
@@ -118,7 +128,15 @@ def urls_get():
 
 
 @app.route('/urls/<int:id>')
-def url_get(id):
+def url_get(id: int) -> Union[Response, str]:
+    """Display details for a specific URL.
+
+    Args:
+        id (int): The ID of the URL.
+
+    Returns:
+        Union[Response, str]: The rendered template or a redirect response.
+    """
     messages = get_flashed_messages(with_categories=True)
     try:
         with conn.cursor() as cursor:
@@ -133,7 +151,6 @@ def url_get(id):
             }
             logging.warning(f"url: {url}")
 
-            # url_checks
             sql = f"""
             SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description 
             FROM url_checks 
@@ -169,7 +186,15 @@ def url_get(id):
         return redirect(url_for('index'))
 
 
-def validate(url):
+def validate(url: str) -> list[str]:
+    """Validate the given URL.
+
+    Args:
+        url (str): The URL to validate.
+
+    Returns:
+        list[str]: A list of validation error messages.
+    """
     errors = []
     if not is_url(url):
         errors.append('Некорректный URL')
@@ -178,12 +203,18 @@ def validate(url):
         errors.append('URL превышает 255 символов')
         return errors
     return errors
-    # example of error url:
-    # https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p/bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1bootstrap.bundle.min.jsha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
-def checks_post(id):
+def checks_post(id: int) -> Response:
+    """Perform a check on the specified URL.
+
+    Args:
+        id (int): The ID of the URL to check.
+
+    Returns:
+        Response: A redirect response to the URL details page.
+    """
     messages = get_flashed_messages(with_categories=True)
     try:
         with conn.cursor() as cursor:
