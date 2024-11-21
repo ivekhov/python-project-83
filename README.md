@@ -3,13 +3,17 @@
 **Part of Python Developer Profession on Hexlet**
 https://hexlet.io/programs/python
 
-**Official project description: demonstration**
-https://python-page-analyzer-ru.hexlet.app/
-
 
 ## About tool
 
 Page Analyzer
+
+
+## Public web-page:
+
+https://python-project-83-rr2w.onrender.com/
+
+
 
 ---
 
@@ -67,9 +71,6 @@ Start server:
 $ make start
 ```
 
-## Public web-page:
-
-https://python-project-83-rr2w.onrender.com/
 
 ----
 
