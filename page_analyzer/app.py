@@ -16,7 +16,8 @@ from flask import (
     render_template,
     Response,
     request,
-    url_for
+    url_for,
+    g
 )
 from psycopg2.extras import DictCursor
 from validators.url import url as is_url
@@ -25,14 +26,27 @@ from validators.url import url as is_url
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-try:
-    conn = psycopg2.connect(DATABASE_URL)
-    logging.info("Connection to database established")
-except Exception as e:
-    logging.warning(f"Can`t establish connection to database: {e}")
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+
+def get_db_connection():
+    if 'conn' not in g:
+        try:
+            g.conn = psycopg2.connect(DATABASE_URL)
+            logging.info("Connection to database established")
+        except Exception as e:
+            logging.warning(f"Can't establish connection to database: {e}")
+            g.conn = None
+    return g.conn
+
+
+@app.teardown_appcontext
+def close_db_connection(exception):
+    conn = getattr(g, '_database', None)
+    if conn is not None:
+        conn.close()
+        logging.info("Database connection closed")
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -70,14 +84,19 @@ def urls_get() -> Union[Response, str]:
                 url=url_raw
             )
 
+        conn = get_db_connection()
+        if conn is None:
+            flash('An error occurred while connecting to the database', 'danger')
+            return redirect(url_for('index'))
+
         try:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
                 result = cursor.fetchone()
                 if result:
                     flash('Страница уже существует', 'info')
-                    id = result[0]
-                    return redirect(url_for('url_get', id=id))
+                    url_id = result[0]
+                    return redirect(url_for('url_get', id=url_id))
 
                 cursor.execute("INSERT INTO urls (name) VALUES (%s)", (url,))
                 conn.commit()
@@ -95,6 +114,11 @@ def urls_get() -> Union[Response, str]:
 
     if request.method == 'GET':
         messages = get_flashed_messages(with_categories=True)
+        conn = get_db_connection()
+        if conn is None:
+            flash('Database connection error', 'danger')
+            return redirect(url_for('index'))
+        
         try:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 sql = """
@@ -138,6 +162,11 @@ def url_get(id: int) -> Union[Response, str]:
         Union[Response, str]: The rendered template or a redirect response.
     """
     messages = get_flashed_messages(with_categories=True)
+    conn = get_db_connection()
+    if conn is None:
+        flash('Database connection error', 'danger')
+        return redirect(url_for('index'))
+    
     try:
         with conn.cursor() as cursor:
 
@@ -216,6 +245,11 @@ def checks_post(id: int) -> Response:
         Response: A redirect response to the URL details page.
     """
     messages = get_flashed_messages(with_categories=True)
+    conn = get_db_connection()
+    if conn is None:
+        flash('Database connection error', 'danger')
+        return redirect(url_for('url_get', id=id))
+
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM urls WHERE id = %s", (id,))
