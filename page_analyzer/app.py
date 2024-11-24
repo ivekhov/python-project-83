@@ -279,7 +279,7 @@ def checks_post(id: int) -> Response:
                            (id, status_code, h1_text, title_text, meta_description_text)
             )
             conn.commit()
-            flash('Проверка успешно добавлена', 'success')
+            flash('Страница успешно проверена', 'success')
 
             cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
             urls_raw = cursor.fetchall()
