@@ -55,7 +55,7 @@ def index() -> Response:
 
     Returns:
         Response: The rendered index page.
-    """    
+    """
     return render_template('index.html')
 
 
@@ -119,21 +119,21 @@ def urls_get() -> Union[Response, str]:
         if conn is None:
             flash('Database connection error', 'danger')
             return redirect(url_for('index'))
-        
+
         try:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 sql = """
                     WITH cte AS (
-                        SELECT 
+                        SELECT
                             u.id as id,
                             u.name AS name,
-                        TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked, 
+                        TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked,
                         MAX(ch.id) as last_check_id
-                        FROM urls AS u 
+                        FROM urls AS u
                             LEFT JOIN url_checks AS ch ON ch.url_id = u.id
                         GROUP BY 1, 2
                         ORDER BY 1 DESC
-                    ) SELECT 
+                    ) SELECT
                         cte.id as id,
                         cte.name as name,
                         cte.last_checked as last_checked,
@@ -167,7 +167,7 @@ def url_get(id: int) -> Union[Response, str]:
     if conn is None:
         flash('Database connection error', 'danger')
         return redirect(url_for('index'))
-    
+
     try:
         with conn.cursor() as cursor:
 
@@ -175,16 +175,16 @@ def url_get(id: int) -> Union[Response, str]:
             cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
             url = cursor.fetchone()
             url = {
-                'id': url[0], 
+                'id': url[0],
                 'name': url[1],
                 'created_at': datetime.strftime(url[2], '%Y-%m-%d')
             }
             logging.warning(f"url: {url}")
 
             sql = f"""
-            SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description 
-            FROM url_checks 
-            WHERE url_id = {id} AND status_code IS NOT NULL 
+            SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description
+            FROM url_checks
+            WHERE url_id = {id} AND status_code IS NOT NULL
             ORDER BY id DESC;
             """
             cursor.execute(sql)
@@ -245,7 +245,7 @@ def checks_post(id: int) -> Response:
     Returns:
         Response: A redirect response to the URL details page.
     """
-    messages = get_flashed_messages(with_categories=True)
+
     conn = get_db_connection()
     if conn is None:
         flash('Database connection error', 'danger')
@@ -255,7 +255,7 @@ def checks_post(id: int) -> Response:
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM urls WHERE id = %s", (id,))
             url = cursor.fetchone()[0]
-            
+
             try:
                 response = requests.get(url)
                 response.raise_for_status()
@@ -276,15 +276,16 @@ def checks_post(id: int) -> Response:
                 flash('Произошла ошибка при проверке', 'danger')
                 return redirect(url_for('url_get', id=id))
 
-            cursor.execute("INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)", 
-                           (id, status_code, h1_text, title_text, meta_description_text)
+            cursor.execute(
+                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)",
+                (id, status_code, h1_text, title_text, meta_description_text)
             )
             conn.commit()
             flash('Страница успешно проверена', 'success')
 
             cursor.execute("SELECT id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at, status_code, h1, title, description FROM url_checks WHERE url_id = %s ORDER BY id desc", (id,))
             urls_raw = cursor.fetchall()
-           
+
             urls_checks = []
             for url_check in urls_raw:
                 urls_checks.append(
@@ -297,7 +298,7 @@ def checks_post(id: int) -> Response:
                         'description': url_check[5]
                     }
                 )
-        
+
     except Exception as e:
         conn.rollback()
         logging.error(f"Error creating check: {e}")
