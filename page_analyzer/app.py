@@ -109,7 +109,7 @@ def urls_get() -> Union[Response, str]:
         except Exception as e:
             conn.rollback()
             logging.error(f"Error adding URL to database: {e}")
-            flash('An error occurred while adding the URL', 'danger')
+            flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('index'))
 
     if request.method == 'GET':
@@ -147,7 +147,7 @@ def urls_get() -> Union[Response, str]:
                 )
         except Exception as e:
             logging.error(f"Error getting URLs from database: {e}")
-            flash('An error occurred while getting URLs', 'danger')
+            flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('index'))
 
 
@@ -211,7 +211,7 @@ def url_get(id: int) -> Union[Response, str]:
         )
     except Exception as e:
         logging.error(f"Error getting URL from database: {e}")
-        flash('An error occurred while getting URL', 'danger')
+        flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('index'))
 
 
