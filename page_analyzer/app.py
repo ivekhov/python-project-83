@@ -78,11 +78,12 @@ def urls_get() -> Union[Response, str]:
         if errors:
             flash(errors[0], 'danger')
             messages = get_flashed_messages(with_categories=True)
-            return render_template(
+            response = render_template(
                 'index.html',
                 messages=messages,
                 url=url_raw
             )
+            return response, 422
 
         conn = get_db_connection()
         if conn is None:
