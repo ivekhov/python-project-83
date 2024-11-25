@@ -258,7 +258,7 @@ def checks_post(id: int) -> Response:
             
             try:
                 response = requests.get(url)
-                response.raise_for_status
+                response.raise_for_status()
                 status_code = response.status_code
 
                 soup = BeautifulSoup(response.content, 'html.parser')
