@@ -125,7 +125,6 @@ class UrlRepository:
             with conn.cursor() as cursor:
                 sql = "INSERT INTO urls (name) VALUES (%s)"
                 cursor.execute(sql, (url,))
-                return cursor.fetchone()
             conn.commit()
 
     def get_checks(self, id: int) -> Optional[tuple]:
