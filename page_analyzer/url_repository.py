@@ -119,7 +119,7 @@ class UrlRepository:
             url (str): The URL to save.
 
         Returns:
-            Optional[tuple]: The result of the insert operation, or None if failed.
+            Optional[tuple]: The result of the insert , or None if failed.
         """
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
