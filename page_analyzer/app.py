@@ -8,8 +8,8 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
-    Flask,
     flash,
+    Flask,
     get_flashed_messages,
     redirect,
     render_template,
@@ -20,6 +20,7 @@ from flask import (
 from validators.url import url as is_url
 
 from page_analyzer.url_repository import UrlRepository
+
 
 load_dotenv()
 
