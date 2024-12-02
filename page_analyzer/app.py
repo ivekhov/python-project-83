@@ -13,8 +13,8 @@ from flask import (
     get_flashed_messages,
     redirect,
     render_template,
-    Response,
     request,
+    Response,
     url_for
 )
 from validators.url import url as is_url
