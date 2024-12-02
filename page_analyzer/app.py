@@ -8,13 +8,13 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
-    flash,
     Flask,
+    Response,
+    flash,
     get_flashed_messages,
     redirect,
     render_template,
     request,
-    Response,
     url_for
 )
 from validators.url import url as is_url
@@ -26,6 +26,7 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
+
 
 repo = UrlRepository(app.config['DATABASE_URL'])
 
