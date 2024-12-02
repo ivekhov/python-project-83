@@ -7,16 +7,14 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from flask import (
-    Flask,
-    Response,
-    flash,
-    get_flashed_messages,
-    redirect,
-    render_template,
-    request,
-    url_for
-)
+from flask import Flask
+from flask import Response
+from flask import flash
+from flask import get_flashed_messages
+from flask import redirect
+from flask import render_template
+from flask import request
+from flask import url_for
 from validators.url import url as is_url
 
 from page_analyzer.url_repository import UrlRepository
