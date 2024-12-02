@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from flask import g
 import psycopg2
+from flask import g
 from psycopg2.extras import RealDictCursor
 
 
