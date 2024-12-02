@@ -21,7 +21,6 @@ from validators.url import url as is_url
 
 from page_analyzer.url_repository import UrlRepository
 
-
 load_dotenv()
 
 app = Flask(__name__)
