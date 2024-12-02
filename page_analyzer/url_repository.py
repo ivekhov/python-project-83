@@ -8,7 +8,6 @@ from psycopg2.extras import RealDictCursor
 
 class UrlRepository:
     """Repository for handling URL-related database operations."""
-
     def __init__(self, db_url: str):
         """Initialize the UrlRepository with the database URL.
 

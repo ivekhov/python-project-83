@@ -21,16 +21,15 @@ from validators.url import url as is_url
 
 from page_analyzer.url_repository import UrlRepository
 
-
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
+
 repo = UrlRepository(app.config['DATABASE_URL'])
 
 
-# ToDo: check
 @app.teardown_appcontext
 def close_db_connection(exception):
     UrlRepository.close_db_connection(exception)
