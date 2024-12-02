@@ -21,6 +21,7 @@ psycopg2-binary = "^2.9.10"
 validators = "^0.34.0"
 requests = "^2.32.3"
 beautifulsoup4 = "^4.12.3"
+ruff = "^0.8.1"
 
 [tool.poetry.group.dev.dependencies]
 
