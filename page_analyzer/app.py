@@ -1,6 +1,6 @@
+from datetime import datetime
 import logging
 import os
-from datetime import datetime
 from typing import Union
 from urllib.parse import urlparse
 
@@ -23,7 +23,6 @@ from page_analyzer.url_repository import UrlRepository
 
 
 load_dotenv()
-
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')

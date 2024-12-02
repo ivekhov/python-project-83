@@ -1,9 +1,9 @@
 import logging
 from typing import Optional
 
+from flask import g
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from flask import g
 
 
 class UrlRepository:
