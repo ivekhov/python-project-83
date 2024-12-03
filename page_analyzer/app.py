@@ -8,14 +8,14 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
-    flash,
     Flask,
+    Response,
+    flash,
     get_flashed_messages,
     redirect,
     render_template,
     request,
-    Response,
-    url_for
+    url_for,
 )
 from validators.url import url as is_url
 
