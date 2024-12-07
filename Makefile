@@ -21,7 +21,7 @@ test-coverage-miss:
 	poetry run pytest --cov-report term-missing --cov=page_analyzer
 
 lint:
-	poetry run flake8 page_analyzer
+	poetry run ruff check page_analyzer
 
 selfcheck:
 	poetry check

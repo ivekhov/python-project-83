@@ -1,9 +1,7 @@
 import logging
 from typing import Optional
 
-import psycopg2
-from flask import g
-from psycopg2.extras import RealDictCursor
+from page_analyzer.db_context import DatabaseConnection
 
 
 class UrlRepository:
@@ -17,33 +15,27 @@ class UrlRepository:
         """
         self.db_url = db_url
 
-    def get_connection(self):
-        """Get a database connection.
+    def close_connection(self, exception: Optional[Exception] = None):
+        """Close the database connection.
 
-        Returns:
-            psycopg2.extensions.connection: The database connection.
+        Args:
+            exception (Optional[Exception]): 
+            The exception that caused the teardown, if any.
         """
-        if 'conn' not in g:
-            try:
-                g.conn = psycopg2.connect(self.db_url)
-                logging.info("Connection to database established")
-            except Exception as e:
-                logging.warning(f"Can't establish connection to database: {e}")
-                g.conn = None
-        return g.conn
-
-    @staticmethod
-    def close_db_connection(exception):
-        """Close the database connection."""
-        conn = getattr(g, '_database', None)
-        if conn is not None:
-            conn.close()
-            logging.info("Database connection closed")
+        try:
+            with DatabaseConnection(self.db_url) as conn:
+                if conn is not None:
+                    conn.close()
+                    logging.info("Database connection closed")
+        except Exception as e:
+            logging.warning(f"Error closing connection to database: {e}")
 
     def get_content(self):
         """Get the content of the URLs table."""
-        with self.get_connection() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return None
+            with conn.cursor() as cursor:
                 sql = """
                 WITH cte AS (
                     SELECT
@@ -76,7 +68,9 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The ID of the URL, or None if not found.
         """
-        with self.get_connection() as conn:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return None
             with conn.cursor() as cursor:
                 sql = "SELECT id FROM urls WHERE name = %s"
                 cursor.execute(sql, (url,))
@@ -91,7 +85,9 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The details of the URL, or None if not found.
         """
-        with self.get_connection() as conn:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return None
             with conn.cursor() as cursor:
                 sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
                 cursor.execute(sql, (id,))
@@ -106,7 +102,9 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The URL, or None if not found.
         """
-        with self.get_connection() as conn:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return None
             with conn.cursor() as cursor:
                 sql = "SELECT name FROM urls WHERE id = %s"
                 cursor.execute(sql, (id,))
@@ -121,9 +119,11 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The result of the insert , or None if failed.
         """
-        with self.get_connection() as conn:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return None
             with conn.cursor() as cursor:
-                sql = "INSERT INTO urls (name) VALUES (%s)"
+                sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
                 cursor.execute(sql, (url,))
             conn.commit()
 
@@ -136,7 +136,9 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The checks for the URL, or None if not found.
         """
-        with self.get_connection() as conn:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return None
             with conn.cursor() as cursor:
                 sql = """
                 SELECT
@@ -155,7 +157,9 @@ class UrlRepository:
         Args:
             url_data (dict): The data of the URL checks to save.
         """
-        with self.get_connection() as conn:
+        with DatabaseConnection(self.db_url) as conn:
+            if conn is None:
+                return
             with conn.cursor() as cursor:
                 sql = """
                 INSERT INTO url_checks
