@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Optional
 
 from page_analyzer.db_context import DatabaseConnection
@@ -22,19 +23,16 @@ class UrlRepository:
             exception (Optional[Exception]): 
             The exception that caused the teardown, if any.
         """
-        try:
-            with DatabaseConnection(self.db_url) as conn:
-                if conn is not None:
-                    conn.close()
-                    logging.info("Database connection closed")
-        except Exception as e:
-            logging.warning(f"Error closing connection to database: {e}")
+        with DatabaseConnection(self.db_url) as conn:
+            try:
+                conn.close()
+                logging.info("Database connection closed")
+            except Exception as e:
+                logging.warning(f"Error closing connection to database: {e}")
 
     def get_content(self):
         """Get the content of the URLs table."""
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return None
             with conn.cursor() as cursor:
                 sql = """
                 WITH cte AS (
@@ -69,8 +67,6 @@ class UrlRepository:
             Optional[tuple]: The ID of the URL, or None if not found.
         """
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return None
             with conn.cursor() as cursor:
                 sql = "SELECT id FROM urls WHERE name = %s"
                 cursor.execute(sql, (url,))
@@ -86,12 +82,18 @@ class UrlRepository:
             Optional[tuple]: The details of the URL, or None if not found.
         """
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return None
             with conn.cursor() as cursor:
                 sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
                 cursor.execute(sql, (id,))
-                return cursor.fetchone()
+                url = cursor.fetchone()
+                url = {
+                    'id': url.get('id'),
+                    'name': url.get('name'),
+                    'created_at': datetime.strftime(
+                        url.get('created_at'), '%Y-%m-%d'
+                        )
+                }
+                return url
 
     def find_url(self, id: int) -> Optional[tuple]:
         """Find the URL by ID.
@@ -103,8 +105,6 @@ class UrlRepository:
             Optional[tuple]: The URL, or None if not found.
         """
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return None
             with conn.cursor() as cursor:
                 sql = "SELECT name FROM urls WHERE id = %s"
                 cursor.execute(sql, (id,))
@@ -120,12 +120,14 @@ class UrlRepository:
             Optional[tuple]: The result of the insert , or None if failed.
         """
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return None
-            with conn.cursor() as cursor:
-                sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
-                cursor.execute(sql, (url,))
-            conn.commit()
+            try:
+                with conn.cursor() as cursor:
+                    sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
+                    cursor.execute(sql, (url,))
+                conn.commit()
+            except Exception as e:
+                logging.warning(f'Error while saving url: {e}')
+                conn.rollback()
 
     def get_checks(self, id: int) -> Optional[tuple]:
         """Get the checks for a specific URL by ID.
@@ -137,8 +139,6 @@ class UrlRepository:
             Optional[tuple]: The checks for the URL, or None if not found.
         """
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return None
             with conn.cursor() as cursor:
                 sql = """
                 SELECT
@@ -149,7 +149,21 @@ class UrlRepository:
                 ORDER BY id DESC;
                 """
                 cursor.execute(sql, (id,))
-                return cursor.fetchall()
+                urls_raw = cursor.fetchall()
+                urls_checks = []
+                for check in urls_raw:
+                    urls_checks.append(
+                        {
+                            'id': check.get('id'),
+                            'url_id': id,
+                            'created_at': check.get('created_at'),
+                            'status_code': check.get('status_code'),
+                            'h1': check.get('h1'),
+                            'title': check.get('title'),
+                            'description': check.get('description')
+                        }
+                    )
+                return urls_checks
 
     def save_checks(self, url_data: dict) -> None:
         """Save checks for a specific URL.
@@ -158,19 +172,22 @@ class UrlRepository:
             url_data (dict): The data of the URL checks to save.
         """
         with DatabaseConnection(self.db_url) as conn:
-            if conn is None:
-                return
-            with conn.cursor() as cursor:
-                sql = """
-                INSERT INTO url_checks
-                    (url_id, status_code, h1, title, description)
-                VALUES (%s, %s, %s, %s, %s)
-                """
-                cursor.execute(sql, (
-                    url_data['url_id'],
-                    url_data['status_code'],
-                    url_data['h1'],
-                    url_data['title'],
-                    url_data['description']
-                ))
-            conn.commit()
+            try:
+                with conn.cursor() as cursor:
+                    sql = """
+                    INSERT INTO url_checks
+                        (url_id, status_code, h1, title, description)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(sql, (
+                        url_data['url_id'],
+                        url_data['status_code'],
+                        url_data['h1'],
+                        url_data['title'],
+                        url_data['description']
+                    ))
+                conn.commit()
+            except Exception as e:
+                logging.warning(f'Error while saving checks: {e}')
+                conn.rollback()
+ 

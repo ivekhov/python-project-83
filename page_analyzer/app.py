@@ -1,11 +1,7 @@
 import logging
 import os
-from datetime import datetime
 from typing import Union
-from urllib.parse import urlparse
 
-import requests
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -17,9 +13,12 @@ from flask import (
     request,
     url_for,
 )
-from validators.url import url as is_url
 
-from page_analyzer.db_context import DatabaseConnection
+from page_analyzer.url_parser import (
+    clean_url,
+    parse,
+    validate,
+)
 from page_analyzer.url_repository import UrlRepository
 
 load_dotenv()
@@ -56,13 +55,9 @@ def urls_get() -> Union[Response, str]:
     """
     url = ''
     if request.method == 'POST':
-        url_raw = request.form.get('url', '')
-        logging.warning(f"URL: {url_raw} received")
-        parsed = urlparse(url_raw)
-        url = f"{parsed.scheme}://{parsed.hostname}"
-
+        url_raw = request.form.get('url', '')        
+        url = clean_url(url_raw)
         errors = validate(url)
-
         if errors:
             flash(errors[0], 'danger')
             messages = get_flashed_messages(with_categories=True)
@@ -72,49 +67,36 @@ def urls_get() -> Union[Response, str]:
                 url=url_raw
             )
             return response, 422
-        with DatabaseConnection(app.config['DATABASE_URL']) as conn:
-            if conn is None:
-                flash('An error occurred when connecting to the database',
-                      'danger')
-                return redirect(url_for('index'))
 
-            try:
-                result = repo.find_id(url)
-                logging.warning(f'result: {result}')
-                if result:
-                    flash('Страница уже существует', 'info')
-                    url_id = result.get('id')
-                    return redirect(url_for('url_get', id=url_id))
-
-                repo.save_url(url)
-                flash('Страница успешно добавлена', 'success')
-
-                url_id = repo.find_id(url).get('id')
+        try:
+            result = repo.find_id(url)
+            if result:
+                flash('Страница уже существует', 'info')
+                url_id = result.get('id')
                 return redirect(url_for('url_get', id=url_id))
+            repo.save_url(url)
+            flash('Страница успешно добавлена', 'success')
 
-            except Exception as e:
-                conn.rollback()
-                logging.error(f"Error adding URL to database: {e}")
-                flash('Произошла ошибка при проверке', 'danger')
+            url_id = repo.find_id(url).get('id')
+            return redirect(url_for('url_get', id=url_id))
+
+        except Exception as e:
+            logging.error(f"Error adding URL to database: {e}")
+            flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('index'))
 
     if request.method == 'GET':
         messages = get_flashed_messages(with_categories=True)
-        with DatabaseConnection(app.config['DATABASE_URL']) as conn:
-            if conn is None:
-                flash('Database connection error', 'danger')
-                return redirect(url_for('index'))
-
-            try:
-                urls = repo.get_content()
-                return render_template(
-                    'list.html',
-                    urls=urls,
-                )
-            except Exception as e:
-                logging.error(f"Error getting URLs from database: {e}")
-                flash('Произошла ошибка при проверке', 'danger')
-                return redirect(url_for('index'))
+        try:
+            urls = repo.get_content()
+            return render_template(
+                'list.html',
+                urls=urls,
+            )
+        except Exception as e:
+            logging.error(f"Error getting URLs from database: {e}")
+            flash('Произошла ошибка при проверке', 'danger')
+            return redirect(url_for('index'))
 
 
 @app.route('/urls/<int:id>')
@@ -128,66 +110,19 @@ def url_get(id: int) -> Union[Response, str]:
         Union[Response, str]: The rendered template or a redirect response.
     """
     messages = get_flashed_messages(with_categories=True)
-    with DatabaseConnection(app.config['DATABASE_URL']) as conn:
-        if conn is None:
-            flash('Database connection error', 'danger')
-            return redirect(url_for('index'))
-
-        try:
-            url = repo.find_url_details(id)
-            url = {
-                'id': url.get('id'),
-                'name': url.get('name'),
-                'created_at': datetime.strftime(
-                    url.get('created_at'), '%Y-%m-%d'
-                    )
-            }
-            logging.warning(f"url: {url}")
-            urls_raw = repo.get_checks(id)
-            logging.warning(f"urls_raw: {urls_raw}")
-            urls_checks = []
-            for check in urls_raw:
-                urls_checks.append(
-                    {
-                        'id': check.get('id'),
-                        'created_at': check.get('created_at'),
-                        'status_code': check.get('status_code'),
-                        'h1': check.get('h1'),
-                        'title': check.get('title'),
-                        'description': check.get('description')
-                    }
-                )
-            logging.warning(f"urls_checks: {urls_checks}")
-
-            return render_template(
-                'show.html',
-                url=url,
-                messages=messages,
-                urls_checks=urls_checks
-            )
-        except Exception as e:
-            logging.error(f"Error getting URL from database: {e}")
-            flash('Произошла ошибка при проверке', 'danger')
-            return redirect(url_for('index'))
-
-
-def validate(url: str) -> list[str]:
-    """Validate the given URL.
-
-    Args:
-        url (str): The URL to validate.
-
-    Returns:
-        list[str]: A list of validation error messages.
-    """
-    errors = []
-    if not is_url(url):
-        errors.append('Некорректный URL')
-        return errors
-    if len(url) > 255:
-        errors.append('URL превышает 255 символов')
-        return errors
-    return errors
+    try:
+        url = repo.find_url_details(id)
+        urls_checks = repo.get_checks(id)
+        return render_template(
+            'show.html',
+            url=url,
+            messages=messages,
+            urls_checks=urls_checks
+        )
+    except Exception as e:
+        logging.error(f"Error getting URL from database: {e}")
+        flash('Произошла ошибка при проверке', 'danger')
+        return redirect(url_for('index'))
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
@@ -200,72 +135,19 @@ def checks_post(id: int) -> Response:
     Returns:
         Response: A redirect response to the URL details page.
     """
-    with DatabaseConnection(app.config['DATABASE_URL']) as conn:
-        if conn is None:
-            flash('Database connection error', 'danger')
-            return redirect(url_for('url_get', id=id))
+    try:
+        req = repo.find_url(id)
+        url = req.get('name')
+        url_parsed = parse(url)
+        url_parsed['url_id'] = id
+        repo.save_checks(url_parsed)
+        flash('Страница успешно проверена', 'success')
+       
+    except Exception as e:
+        logging.error(f"Error checking URL: {e}")
+        flash('Произошла ошибка при проверке', 'danger')
 
-        try:
-            req = repo.find_url(id)
-            url = req.get('name')
-
-            try:
-                response = requests.get(url)
-                response.raise_for_status()
-                status_code = response.status_code
-
-                soup = BeautifulSoup(response.content, 'html.parser')
-                h1_tag = soup.find('h1')
-                h1_text = h1_tag.get_text(strip=True) if h1_tag else None
-
-                title_tag = soup.find('title')
-                title_text = title_tag \
-                    .get_text(strip=True) if title_tag else None
-
-                meta_description_tag = soup.find(
-                    'meta',
-                    attrs={'name': 'description'}
-                )
-                meta_description_text = meta_description_tag \
-                    .get('content') \
-                    .strip() if meta_description_tag else None
-
-            except requests.exceptions.RequestException as e:
-                logging.error(f"Error checking URL: {e}")
-                flash('Произошла ошибка при проверке', 'danger')
-                return redirect(url_for('url_get', id=id))
-
-            repo.save_checks(
-                {
-                    'url_id': id,
-                    'status_code': status_code,
-                    'h1': h1_text,
-                    'title': title_text,
-                    'description': meta_description_text
-                }
-            )
-            flash('Страница успешно проверена', 'success')
-
-            urls_raw = repo.get_checks(id)
-            urls_checks = []
-            for url_check in urls_raw:
-                urls_checks.append(
-                    {
-                        'id': url_check.get('id'),
-                        'created_at': url_check.get('created_at'),
-                        'status_code': url_check.get('status_code'),
-                        'h1': url_check.get('h1'),
-                        'title': url_check.get('title'),
-                        'description': url_check.get('description')
-                    }
-                )
-
-        except Exception as e:
-            conn.rollback()
-            logging.error(f"Error creating check: {e}")
-            flash('Произошла ошибка при проверке', 'danger')
-            return redirect(url_for('url_get', id=id))
-
+    finally:
         return redirect(url_for('url_get', id=id))
 
 
