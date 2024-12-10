@@ -6,17 +6,16 @@ from bs4 import BeautifulSoup
 from validators.url import url as is_url
 
 
-def parse(url: str) -> Dict:
-    """Parse the given URL.
+def parse(response: requests.models.Response) -> Dict:
+    """Parse the given response.
 
     Args:
-        url (str): The URL to validate.
-
+        response (requests.models.Response): 
+            A Response object.
 
     Returns:
         list[str]: A dict with parsed items.
     """
-    response = requests.get(url)
     response.raise_for_status()
     status_code = response.status_code
 
@@ -63,7 +62,14 @@ def validate(url: str) -> list[str]:
     return errors
 
 
-def clean_url(url: str) -> str:
-    """."""
+def clear_url(url: str) -> str:
+    """Remove from URL unnecessary info and leave only scheme and hostname.
+    
+    Args:
+        url (str): The URL to clear.
+
+    Returns:
+        str: A URL with scheme and hostname.
+    """
     parsed = urlparse(url)
     return f"{parsed.scheme}://{parsed.hostname}"

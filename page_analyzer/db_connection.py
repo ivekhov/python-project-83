@@ -15,23 +15,26 @@ class DatabaseConnection:
         """
         self.db_url = db_url
         self.conn = None
+        self.cursor = None
 
     def __enter__(self):
         """Enter the runtime context related to this object.
 
         Returns:
-            psycopg2.extensions.connection: The database connection.
+            psycopg2.extensions.connection.cursor: 
+                The cursor to database connection.
         """
         try:
             self.conn = psycopg2.connect(
                 self.db_url,
                 cursor_factory=RealDictCursor
                 )
+            self.cursor = self.conn.cursor()
             logging.info("Connection to database established")
-        except Exception as e:
+        except ConnectionRefusedError as e:
             logging.warning(f"Can't establish connection to database: {e}")
-            self.conn = None
-        return self.conn
+        return self.cursor
+
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit the runtime context related to this object.
@@ -42,9 +45,21 @@ class DatabaseConnection:
             traceback (traceback): The traceback object.
         """
         try:
+            if self.cursor is not None:
+                self.cursor.close()
+                logging.info("Cursor closed")
             if self.conn is not None:
                 self.conn.close()
                 logging.info("Database connection closed")
         except Exception as e:
             logging.warning(f"Error closing connection to database: {e}")
         return False
+    
+    def commit(self):
+        try:
+            if self.conn is not None:
+                self.conn.commit()
+                logging.info("Commited successfully")
+        except Exception as e:
+            self.conn.rollback()
+            logging.warning(f"Error commiting to database: {e}")

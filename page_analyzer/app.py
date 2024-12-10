@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Union
 
+import requests
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -15,7 +16,7 @@ from flask import (
 )
 
 from page_analyzer.url_parser import (
-    clean_url,
+    clear_url,
     parse,
     validate,
 )
@@ -56,7 +57,7 @@ def urls_get() -> Union[Response, str]:
     url = ''
     if request.method == 'POST':
         url_raw = request.form.get('url', '')        
-        url = clean_url(url_raw)
+        url = clear_url(url_raw)
         errors = validate(url)
         if errors:
             flash(errors[0], 'danger')
@@ -138,7 +139,8 @@ def checks_post(id: int) -> Response:
     try:
         req = repo.find_url(id)
         url = req.get('name')
-        url_parsed = parse(url)
+        response = requests.get(url)
+        url_parsed = parse(response)
         url_parsed['url_id'] = id
         repo.save_checks(url_parsed)
         flash('Страница успешно проверена', 'success')
