@@ -2,12 +2,12 @@ import logging
 import os
 from typing import Union
 
+import requests
 from dotenv import load_dotenv
 from flask import (
     Flask,
     Response,
     flash,
-    get_flashed_messages,
     redirect,
     render_template,
     request,
@@ -15,7 +15,7 @@ from flask import (
 )
 
 from page_analyzer.url_parser import (
-    clean_url,
+    clear_url,
     parse,
     validate,
 )
@@ -56,14 +56,12 @@ def urls_get() -> Union[Response, str]:
     url = ''
     if request.method == 'POST':
         url_raw = request.form.get('url', '')        
-        url = clean_url(url_raw)
+        url = clear_url(url_raw)
         errors = validate(url)
         if errors:
             flash(errors[0], 'danger')
-            messages = get_flashed_messages(with_categories=True)
             response = render_template(
                 'index.html',
-                messages=messages,
                 url=url_raw
             )
             return response, 422
@@ -85,8 +83,7 @@ def urls_get() -> Union[Response, str]:
             flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('index'))
 
-    if request.method == 'GET':
-        messages = get_flashed_messages(with_categories=True)
+    if request.method == 'GET':        
         try:
             urls = repo.get_content()
             return render_template(
@@ -109,14 +106,12 @@ def url_get(id: int) -> Union[Response, str]:
     Returns:
         Union[Response, str]: The rendered template or a redirect response.
     """
-    messages = get_flashed_messages(with_categories=True)
     try:
         url = repo.find_url_details(id)
         urls_checks = repo.get_checks(id)
         return render_template(
             'show.html',
             url=url,
-            messages=messages,
             urls_checks=urls_checks
         )
     except Exception as e:
@@ -138,7 +133,8 @@ def checks_post(id: int) -> Response:
     try:
         req = repo.find_url(id)
         url = req.get('name')
-        url_parsed = parse(url)
+        response = requests.get(url)
+        url_parsed = parse(response)
         url_parsed['url_id'] = id
         repo.save_checks(url_parsed)
         flash('Страница успешно проверена', 'success')

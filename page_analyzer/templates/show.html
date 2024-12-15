@@ -1,17 +1,5 @@
 {% extends "layout.html" %}
 
-
-{% block message_flash %}
-{% if messages %}
-
-  {% for category, message in messages %}
-    <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-  {% endfor %}
-
-{% endif %}
-{% endblock %}
-
-
 {% block content %}
 
 <h1>Сайт: {{ url.name }}</h1>

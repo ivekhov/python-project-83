@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from page_analyzer.db_context import DatabaseConnection
+from page_analyzer.db_connection import DatabaseConnection
 
 
 class UrlRepository:
@@ -190,4 +190,3 @@ class UrlRepository:
             except Exception as e:
                 logging.warning(f'Error while saving checks: {e}')
                 conn.rollback()
- 
