@@ -15,6 +15,7 @@ class DatabaseConnection:
         """
         self.db_url = db_url
         self.conn = None
+        self.curs = None
 
     def __enter__(self):
         """Enter the runtime context related to this object.
@@ -24,15 +25,14 @@ class DatabaseConnection:
         """
         try:
             self.conn = psycopg2.connect(
-                self.db_url,
+                self.db_url, 
                 cursor_factory=RealDictCursor
-                )
+            )
             logging.info("Connection to database established")
         except Exception as e:
             logging.warning(f"Can't establish connection to database: {e}")
             self.conn = None
         return self.conn
-
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit the runtime context related to this object.
