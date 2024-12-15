@@ -15,7 +15,6 @@ class DatabaseConnection:
         """
         self.db_url = db_url
         self.conn = None
-        self.curs = None
 
     def __enter__(self):
         """Enter the runtime context related to this object.
@@ -45,6 +44,31 @@ class DatabaseConnection:
         try:
             if self.conn is not None:
                 self.conn.close()
+                logging.info("Database connection closed")
+        except Exception as e:
+            logging.warning(f"Error closing connection to database: {e}")
+        return False
+
+class DatabaseCursor(DatabaseConnection):
+    def __init__(self, db_url: str):
+        super().__init__(db_url)
+        self.curs = None
+    
+    def __enter__(self):
+        
+        try:
+            self.curs = super().__enter__().cursor()
+        
+        
+        except Exception as e:
+            logging.warning(f"Error in Cursor Class: {e}")
+            self.curs = None
+        return self.curs
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            if self.curs is not None:
+                self.curs.close()
                 logging.info("Database connection closed")
         except Exception as e:
             logging.warning(f"Error closing connection to database: {e}")

@@ -2,7 +2,10 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from page_analyzer.db_connection import DatabaseConnection
+from page_analyzer.db_connection import (
+    DatabaseConnection,
+    DatabaseCursor
+)
 
 
 class UrlRepository:
@@ -32,30 +35,29 @@ class UrlRepository:
 
     def get_content(self):
         """Get the content of the URLs table."""
-        with DatabaseConnection(self.db_url) as conn:
-            with conn.cursor() as cursor:
-                sql = """
-                WITH cte AS (
-                    SELECT
-                        u.id as id,
-                        u.name AS name,
-                    TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked,
-                    MAX(ch.id) as last_check_id
-                    FROM urls AS u
-                        LEFT JOIN url_checks AS ch ON ch.url_id = u.id
-                    GROUP BY 1, 2
-                    ORDER BY 1 DESC
-                ) SELECT
-                    cte.id as id,
-                    cte.name as name,
-                    cte.last_checked as last_checked,
-                    cheks.status_code as status_code
-                FROM cte
-                    LEFT JOIN url_checks AS cheks
-                        ON cte.last_check_id = cheks.id;
-                """
-                cursor.execute(sql)
-                return cursor.fetchall()
+        with DatabaseCursor(self.db_url) as db_curs:
+            sql = """
+            WITH cte AS (
+                SELECT
+                    u.id as id,
+                    u.name AS name,
+                TO_CHAR(MAX(ch.created_at), 'YYYY-MM-DD') as last_checked,
+                MAX(ch.id) as last_check_id
+                FROM urls AS u
+                    LEFT JOIN url_checks AS ch ON ch.url_id = u.id
+                GROUP BY 1, 2
+                ORDER BY 1 DESC
+            ) SELECT
+                cte.id as id,
+                cte.name as name,
+                cte.last_checked as last_checked,
+                cheks.status_code as status_code
+            FROM cte
+                LEFT JOIN url_checks AS cheks
+                    ON cte.last_check_id = cheks.id;
+            """
+            db_curs.execute(sql)
+            return db_curs.fetchall()
 
     def find_id(self, url: str) -> Optional[tuple]:
         """Find the ID of a URL.
@@ -66,11 +68,10 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The ID of the URL, or None if not found.
         """
-        with DatabaseConnection(self.db_url) as conn:
-            with conn.cursor() as cursor:
-                sql = "SELECT id FROM urls WHERE name = %s"
-                cursor.execute(sql, (url,))
-                return cursor.fetchone()
+        with DatabaseCursor(self.db_url) as db_curs:
+            sql = "SELECT id FROM urls WHERE name = %s"
+            db_curs.execute(sql, (url,))
+            return db_curs.fetchone()
 
     def find_url_details(self, id: int) -> Optional[tuple]:
         """Find the details of a URL by ID.
@@ -81,19 +82,18 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The details of the URL, or None if not found.
         """
-        with DatabaseConnection(self.db_url) as conn:
-            with conn.cursor() as cursor:
-                sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
-                cursor.execute(sql, (id,))
-                url = cursor.fetchone()
-                url = {
-                    'id': url.get('id'),
-                    'name': url.get('name'),
-                    'created_at': datetime.strftime(
-                        url.get('created_at'), '%Y-%m-%d'
-                        )
-                }
-                return url
+        with DatabaseCursor(self.db_url) as db_curs:
+            sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
+            db_curs.execute(sql, (id,))
+            url = db_curs.fetchone()
+            url = {
+                'id': url.get('id'),
+                'name': url.get('name'),
+                'created_at': datetime.strftime(
+                    url.get('created_at'), '%Y-%m-%d'
+                    )
+            }
+            return url
 
     def find_url(self, id: int) -> Optional[tuple]:
         """Find the URL by ID.
@@ -104,11 +104,10 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The URL, or None if not found.
         """
-        with DatabaseConnection(self.db_url) as conn:
-            with conn.cursor() as cursor:
-                sql = "SELECT name FROM urls WHERE id = %s"
-                cursor.execute(sql, (id,))
-                return cursor.fetchone()
+        with DatabaseCursor(self.db_url) as db_curs:
+            sql = "SELECT name FROM urls WHERE id = %s"
+            db_curs.execute(sql, (id,))
+            return db_curs.fetchone()
 
     def save_url(self, url: str) -> Optional[tuple]:
         """Save a new URL to the database.
@@ -138,32 +137,31 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The checks for the URL, or None if not found.
         """
-        with DatabaseConnection(self.db_url) as conn:
-            with conn.cursor() as cursor:
-                sql = """
-                SELECT
-                    id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at,
-                    status_code, h1, title, description
-                FROM url_checks
-                WHERE url_id = %s AND status_code IS NOT NULL
-                ORDER BY id DESC;
-                """
-                cursor.execute(sql, (id,))
-                urls_raw = cursor.fetchall()
-                urls_checks = []
-                for check in urls_raw:
-                    urls_checks.append(
-                        {
-                            'id': check.get('id'),
-                            'url_id': id,
-                            'created_at': check.get('created_at'),
-                            'status_code': check.get('status_code'),
-                            'h1': check.get('h1'),
-                            'title': check.get('title'),
-                            'description': check.get('description')
-                        }
-                    )
-                return urls_checks
+        with DatabaseCursor(self.db_url) as db_curs:
+            sql = """
+            SELECT
+                id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at,
+                status_code, h1, title, description
+            FROM url_checks
+            WHERE url_id = %s AND status_code IS NOT NULL
+            ORDER BY id DESC;
+            """
+            db_curs.execute(sql, (id,))
+            urls_raw = db_curs.fetchall()
+            urls_checks = []
+            for check in urls_raw:
+                urls_checks.append(
+                    {
+                        'id': check.get('id'),
+                        'url_id': id,
+                        'created_at': check.get('created_at'),
+                        'status_code': check.get('status_code'),
+                        'h1': check.get('h1'),
+                        'title': check.get('title'),
+                        'description': check.get('description')
+                    }
+                )
+            return urls_checks
 
     def save_checks(self, url_data: dict) -> None:
         """Save checks for a specific URL.
