@@ -2,10 +2,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from page_analyzer.db_connection import (
-    DatabaseConnection,
-    DatabaseCursor
-)
+from page_analyzer.db_connection import DatabaseConnection, DatabaseCursor
 
 
 class UrlRepository:

@@ -49,6 +49,7 @@ class DatabaseConnection:
             logging.warning(f"Error closing connection to database: {e}")
         return False
 
+
 class DatabaseCursor(DatabaseConnection):
     def __init__(self, db_url: str):
         super().__init__(db_url)
@@ -58,7 +59,6 @@ class DatabaseCursor(DatabaseConnection):
         
         try:
             self.curs = super().__enter__().cursor()
-        
         
         except Exception as e:
             logging.warning(f"Error in Cursor Class: {e}")
