@@ -29,7 +29,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
 
-
 repo = UrlRepository(app.config['DATABASE_URL'])
 
 
@@ -38,9 +37,10 @@ def close_db_connection(exception):
     repo.close_connection(exception)
 
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
+@app.errorhandler(400)
+def url_id_not_found(e):
+    flash('Произошла ошибка при проверке', 'danger')
+    return redirect(url_for('index'))
 
 
 @app.errorhandler(500)
@@ -77,38 +77,27 @@ def urls_get() -> Union[Response, str]:
                 url=url_raw
             )
             return response, 422
-
-        # ToDo: try-except into handlers
-        try:
-            result = repo.find_id(url)
-            if result:
-                flash('Страница уже существует', 'info')
-                url_id = result.get('id')
-                return redirect(url_for('url_get', id=url_id))
-            repo.save_url(url)
-            flash('Страница успешно добавлена', 'success')
-
-            url_id = repo.find_id(url).get('id')
+        result = repo.find_id(url)
+        if result:
+            flash('Страница уже существует', 'info')
+            url_id = result.get('id')
             return redirect(url_for('url_get', id=url_id))
+        repo.save_url(url)
+        flash('Страница успешно добавлена', 'success')
 
-        except Exception as e:
-            logging.error(f"Error adding URL to database: {e}")
-            flash('Произошла ошибка при проверке', 'danger')
-            return redirect(url_for('index'))
+        url_id = repo.find_id(url).get('id')
+        if url_id is None:
+            abort(400)
+        return redirect(url_for('url_get', id=url_id))
 
     if request.method == 'GET':
-
-        # ToDo: try-except into handlers
-        try:
-            urls = repo.get_content()
-            return render_template(
-                'list.html',
-                urls=urls,
-            )
-        except Exception as e:
-            logging.error(f"Error getting URLs from database: {e}")
-            flash('Произошла ошибка при проверке', 'danger')
-            return redirect(url_for('index'))
+        urls = repo.get_content()
+        if urls is None:
+            abort(400)
+        return render_template(
+            'list.html',
+            urls=urls,
+        )
 
 
 @app.route('/urls/<int:id>')
@@ -167,4 +156,5 @@ def checks_post(id: int) -> Response:
 
 
 if __name__ == "__main__":
+    app.register_error_handler(500, internal_server_error)
     app.run()
