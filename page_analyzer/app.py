@@ -42,17 +42,22 @@ def url_id_not_found(e):
     return redirect(url_for('index'))
 
 
-@app.errorhandler(404)
-def url_response_is_not_valid(e):
+@app.errorhandler(403)
+def handle_http_exception(e):
     flash('Произошла ошибка при проверке', 'danger')
     return redirect(url_for('index'))
 
 
-@app.errorhandler(Exception)
-def handle_http_exception(e):
-    if isinstance(e, HTTPException):
-        flash('Произошла ошибка при проверке', 'danger')
-        return redirect(url_for('index'))
+@app.errorhandler(500)
+def handle_server_error(e):
+    flash('Произошла ошибка при проверке', 'danger')
+    return redirect(url_for('index'))
+
+
+@app.errorhandler(ConnectionError)
+def handle_connection_is_not_established(e):
+    flash('Произошла ошибка при проверке', 'danger')
+    return redirect(url_for('index'))
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -147,7 +152,7 @@ def checks_post(id: int) -> Response:
     url = req.get('name')
     response = requests.get(url)
     if not response.ok:
-        abort(Exception)
+        abort(403)
     url_parsed = parse(response)
     url_parsed['url_id'] = id
     repo.save_checks(url_parsed)
