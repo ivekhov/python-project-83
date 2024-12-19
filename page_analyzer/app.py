@@ -7,12 +7,14 @@ from dotenv import load_dotenv
 from flask import (
     Flask,
     Response,
+    abort,
     flash,
     redirect,
     render_template,
     request,
     url_for,
 )
+from werkzeug.exceptions import HTTPException
 
 from page_analyzer.url_parser import (
     clear_url,
@@ -36,6 +38,16 @@ def close_db_connection(exception):
     repo.close_connection(exception)
 
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index() -> Response:
     """Render the index page.
@@ -55,7 +67,7 @@ def urls_get() -> Union[Response, str]:
     """
     url = ''
     if request.method == 'POST':
-        url_raw = request.form.get('url', '')        
+        url_raw = request.form.get('url', '')
         url = clear_url(url_raw)
         errors = validate(url)
         if errors:
@@ -66,6 +78,7 @@ def urls_get() -> Union[Response, str]:
             )
             return response, 422
 
+        # ToDo: try-except into handlers
         try:
             result = repo.find_id(url)
             if result:
@@ -83,7 +96,9 @@ def urls_get() -> Union[Response, str]:
             flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('index'))
 
-    if request.method == 'GET':        
+    if request.method == 'GET':
+
+        # ToDo: try-except into handlers
         try:
             urls = repo.get_content()
             return render_template(
@@ -106,6 +121,8 @@ def url_get(id: int) -> Union[Response, str]:
     Returns:
         Union[Response, str]: The rendered template or a redirect response.
     """
+
+    # ToDo: try-except into handlers
     try:
         url = repo.find_url_details(id)
         urls_checks = repo.get_checks(id)
@@ -130,6 +147,8 @@ def checks_post(id: int) -> Response:
     Returns:
         Response: A redirect response to the URL details page.
     """
+
+    # ToDo: try-except into handlers
     try:
         req = repo.find_url(id)
         url = req.get('name')
@@ -138,7 +157,7 @@ def checks_post(id: int) -> Response:
         url_parsed['url_id'] = id
         repo.save_checks(url_parsed)
         flash('Страница успешно проверена', 'success')
-       
+
     except Exception as e:
         logging.error(f"Error checking URL: {e}")
         flash('Произошла ошибка при проверке', 'danger')
