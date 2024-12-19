@@ -43,9 +43,16 @@ def url_id_not_found(e):
     return redirect(url_for('index'))
 
 
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
+@app.errorhandler(404)
+def url_response_is_not_valid(e):
+    flash('Произошла ошибка при проверке', 'danger')
+    return redirect(url_for('index'))
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    flash('Произошла ошибка при проверке', 'danger')
+    return redirect(url_for('index'))
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -110,20 +117,17 @@ def url_get(id: int) -> Union[Response, str]:
     Returns:
         Union[Response, str]: The rendered template or a redirect response.
     """
-
-    # ToDo: try-except into handlers
-    try:
-        url = repo.find_url_details(id)
-        urls_checks = repo.get_checks(id)
-        return render_template(
-            'show.html',
-            url=url,
-            urls_checks=urls_checks
-        )
-    except Exception as e:
-        logging.error(f"Error getting URL from database: {e}")
-        flash('Произошла ошибка при проверке', 'danger')
-        return redirect(url_for('index'))
+    url = repo.find_url_details(id)
+    if url is None:
+        abort(400)
+    urls_checks = repo.get_checks(id)
+    if urls_checks is None:
+        abort(400)
+    return render_template(
+        'show.html',
+        url=url,
+        urls_checks=urls_checks
+    )
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
@@ -137,24 +141,20 @@ def checks_post(id: int) -> Response:
         Response: A redirect response to the URL details page.
     """
 
-    # ToDo: try-except into handlers
-    try:
-        req = repo.find_url(id)
-        url = req.get('name')
-        response = requests.get(url)
-        url_parsed = parse(response)
-        url_parsed['url_id'] = id
-        repo.save_checks(url_parsed)
-        flash('Страница успешно проверена', 'success')
-
-    except Exception as e:
-        logging.error(f"Error checking URL: {e}")
-        flash('Произошла ошибка при проверке', 'danger')
-
-    finally:
-        return redirect(url_for('url_get', id=id))
+    req = repo.find_url(id)
+    if req is None:
+        abort(400)
+    url = req.get('name')
+    response = requests.get(url)
+    if not response.ok:
+        abort(HTTPException)
+    url_parsed = parse(response)
+    url_parsed['url_id'] = id
+    repo.save_checks(url_parsed)
+    flash('Страница успешно проверена', 'success')
+    return redirect(url_for('url_get', id=id))
 
 
 if __name__ == "__main__":
-    app.register_error_handler(500, internal_server_error)
+    #     app.register_error_handler(500, internal_server_error)
     app.run()
