@@ -1,7 +1,6 @@
 import os
 from typing import Union
 
-import chardet
 import requests
 from dotenv import load_dotenv
 from flask import (
@@ -31,17 +30,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
 
 repo = UrlRepository(app.config['DATABASE_URL'])
-
-
-@app.teardown_appcontext
-def close_db_connection(exception):
-    repo.close_connection(exception)
-
-
-@app.errorhandler(400)
-def handle_url_id_unfound(e):
-    flash('Произошла ошибка при проверке', 'danger')
-    return redirect(url_for('index'))
 
 
 @app.errorhandler(404)
@@ -95,13 +83,13 @@ def get_urls() -> Union[Response, str]:
 
         url_id = repo.find_id(url).get('id')
         if url_id is None:
-            abort(400)
+            abort(404)
         return redirect(url_for('get_url', id=url_id))
 
     if request.method == 'GET':
         urls = repo.get_urls()
         if urls is None:
-            abort(400)
+            abort(404)
         return render_template(
             'list.html',
             urls=urls,
@@ -110,20 +98,13 @@ def get_urls() -> Union[Response, str]:
 
 @app.route('/urls/<int:id>')
 def get_url(id: int) -> Union[Response, str]:
-    """Display details for a specific URL.
-
-    Args:
-        id (int): The ID of the URL.
-
-    Returns:
-        Union[Response, str]: The rendered template or a redirect response.
-    """
+    """Display details for a specific URL. """
     url = repo.find_url_details(id)
     if url is None:
-        abort(400)
+        abort(404)
     urls_checks = repo.get_checks(id)
     if urls_checks is None:
-        abort(400)
+        abort(404)
     return render_template(
         'show.html',
         url=url,
@@ -132,19 +113,11 @@ def get_url(id: int) -> Union[Response, str]:
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
-def check_post(id: int) -> Response:
-    """Perform a check on the specified URL.
-
-    Args:
-        id (int): The ID of the URL to check.
-
-    Returns:
-        Response: A redirect response to the URL details page.
-    """
-
+def check_post(id: int):
+    """Perform a check on the specified URL."""
     req = repo.find_url(id)
     if req is None:
-        abort(400)
+        abort(404)
     url = req.get('name')
     response = requests.get(url)
     if not response.ok:
@@ -157,7 +130,6 @@ def check_post(id: int) -> Response:
     url_parsed = parse_url(
         content
     )
-
     url_parsed['url_id'] = id
     url_parsed['status_code'] = status_code
 
