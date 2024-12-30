@@ -1,6 +1,7 @@
 import os
 from typing import Union
 
+import chardet
 import requests
 from dotenv import load_dotenv
 from flask import (
@@ -88,14 +89,14 @@ def get_urls() -> Union[Response, str]:
         if result:
             flash('Страница уже существует', 'info')
             url_id = result.get('id')
-            return redirect(url_for('url_get', id=url_id))
+            return redirect(url_for('get_url', id=url_id))
         repo.save_url(url)
         flash('Страница успешно добавлена', 'success')
 
         url_id = repo.find_id(url).get('id')
         if url_id is None:
             abort(400)
-        return redirect(url_for('url_get', id=url_id))
+        return redirect(url_for('get_url', id=url_id))
 
     if request.method == 'GET':
         urls = repo.get_urls()
@@ -148,11 +149,21 @@ def check_post(id: int) -> Response:
     response = requests.get(url)
     if not response.ok:
         abort(404)
-    url_parsed = parse_url(response)
+    
+    response.raise_for_status()
+    status_code = response.status_code
+
+    content = response.content
+    url_parsed = parse_url(
+        content
+    )
+
     url_parsed['url_id'] = id
+    url_parsed['status_code'] = status_code
+
     repo.save_checks(url_parsed)
     flash('Страница успешно проверена', 'success')
-    return redirect(url_for('url_get', id=id))
+    return redirect(url_for('get_url', id=id))
 
 
 if __name__ == "__main__":

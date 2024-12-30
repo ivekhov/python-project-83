@@ -19,7 +19,7 @@
         <tr>
           <td>{{ url.id }}</td>
           <td>
-            <a href="{{ url_for('url_get', id=url.id)}}">{{ url.name }}</a>
+            <a href="{{ url_for('get_url', id=url.id)}}">{{ url.name }}</a>
           </td>
           <td>{{ url.last_checked if url.last_checked else '' }}</td>  
           <td>{{ url.status_code if url.status_code else '' }}</td>
