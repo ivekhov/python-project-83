@@ -7,10 +7,10 @@ CREATE TABLE urls (
 );
 
 
-COPY urls(name) 
-FROM './tests/fixtures/database.csv' 
-DELIMITER ','
-CSV HEADER;
+-- COPY urls(name) 
+-- FROM './tests/fixtures/database.csv' 
+-- DELIMITER ','
+-- CSV HEADER;
 
 
 DROP TABLE IF EXISTS url_checks;
