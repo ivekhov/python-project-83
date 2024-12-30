@@ -1,13 +1,15 @@
 import functools
 import logging
-import psycopg2
-
 from datetime import datetime
-from psycopg2.extras import RealDictCursor
 from typing import Optional
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+
 def with_cursor(func):
-    """Decorator to initialize a database cursor and pass it to the wrapped function."""
+    """Decorator to initialize a database cursor 
+        and pass it to the wrapped function."""
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         conn = psycopg2.connect(self.db_url)
@@ -24,6 +26,7 @@ def with_cursor(func):
             conn.close()
             logging.info("Database connection closed")
     return wrapper
+
 
 class UrlRepository:
     """Repository for handling URL-related database operations."""
@@ -86,19 +89,6 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The details of the URL, or None if not found.
         """
-        # with DatabaseCursor(self.db_url) as db_curs:
-        #     sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
-        #     db_curs.execute(sql, (id,))
-        #     url = db_curs.fetchone()
-        #     url = {
-        #         'id': url.get('id'),
-        #         'name': url.get('name'),
-        #         'created_at': datetime.strftime(
-        #             url.get('created_at'), '%Y-%m-%d'
-        #             )
-        #     }
-        #     return url
-
         sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
         db_curs.execute(sql, (id,))
         url = db_curs.fetchone()
@@ -121,11 +111,6 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The URL, or None if not found.
         """
-        # with DatabaseCursor(self.db_url) as db_curs:
-        #     sql = "SELECT name FROM urls WHERE id = %s"
-        #     db_curs.execute(sql, (id,))
-        #     return db_curs.fetchone()
-        #
         sql = "SELECT name FROM urls WHERE id = %s"
         db_curs.execute(sql, (id,))
         return db_curs.fetchone()
@@ -140,15 +125,6 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The result of the insert , or None if failed.
         """
-        # with DatabaseConnection(self.db_url) as conn:
-        #     try:
-        #         with conn.cursor() as cursor:
-        #             sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
-        #             cursor.execute(sql, (url,))
-        #         conn.commit()
-        #     except Exception as e:
-        #         logging.warning(f'Error while saving url: {e}')
-        #         conn.rollback()
         sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
         db_curs.execute(sql, (url,))
 
@@ -162,32 +138,6 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The checks for the URL, or None if not found.
         """
-        # with DatabaseCursor(self.db_url) as db_curs:
-        #     sql = """
-        #     SELECT
-        #         id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at,
-        #         status_code, h1, title, description
-        #     FROM url_checks
-        #     WHERE url_id = %s AND status_code IS NOT NULL
-        #     ORDER BY id DESC;
-        #     """
-        #     db_curs.execute(sql, (id,))
-        #     urls_raw = db_curs.fetchall()
-        #     urls_checks = []
-        #     for check in urls_raw:
-        #         urls_checks.append(
-        #             {
-        #                 'id': check.get('id'),
-        #                 'url_id': id,
-        #                 'created_at': check.get('created_at'),
-        #                 'status_code': check.get('status_code'),
-        #                 'h1': check.get('h1'),
-        #                 'title': check.get('title'),
-        #                 'description': check.get('description')
-        #             }
-        #         )
-        #     return urls_checks
-
         sql = """
         SELECT
             id, TO_CHAR(created_at, 'YYYY-MM-DD') as created_at,
@@ -220,25 +170,6 @@ class UrlRepository:
         Args:
             url_data (dict): The data of the URL checks to save.
         """
-        # with DatabaseConnection(self.db_url) as conn:
-        #     try:
-        #         with conn.cursor() as cursor:
-        #             sql = """
-        #             INSERT INTO url_checks
-        #                 (url_id, status_code, h1, title, description)
-        #             VALUES (%s, %s, %s, %s, %s)
-        #             """
-        #             cursor.execute(sql, (
-        #                 url_data['url_id'],
-        #                 url_data['status_code'],
-        #                 url_data['h1'],
-        #                 url_data['title'],
-        #                 url_data['description']
-        #             ))
-        #         conn.commit()
-        #     except Exception as e:
-        #         logging.warning(f'Error while saving checks: {e}')
-        #         conn.rollback()
         sql = """
         INSERT INTO url_checks
             (url_id, status_code, h1, title, description)
