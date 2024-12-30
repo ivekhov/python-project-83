@@ -15,12 +15,13 @@ from flask import (
 )
 from werkzeug.exceptions import HTTPException
 
-from page_analyzer.url_parser import (
+from page_analyzer.parser import parse_url
+from page_analyzer.urls import (
     clear_url,
-    parse,
-    validate,
+    validate_url
 )
 from page_analyzer.url_repository import UrlRepository
+
 
 load_dotenv()
 
@@ -37,12 +38,12 @@ def close_db_connection(exception):
 
 
 @app.errorhandler(400)
-def url_id_not_found(e):
+def handle_url_id_unfound(e):
     flash('Произошла ошибка при проверке', 'danger')
     return redirect(url_for('index'))
 
 
-@app.errorhandler(403)
+@app.errorhandler(404)
 def handle_http_exception(e):
     flash('Произошла ошибка при проверке', 'danger')
     return redirect(url_for('index'))
@@ -50,12 +51,6 @@ def handle_http_exception(e):
 
 @app.errorhandler(500)
 def handle_server_error(e):
-    flash('Произошла ошибка при проверке', 'danger')
-    return redirect(url_for('index'))
-
-
-@app.errorhandler(ConnectionError)
-def handle_connection_is_not_established(e):
     flash('Произошла ошибка при проверке', 'danger')
     return redirect(url_for('index'))
 
@@ -71,7 +66,7 @@ def index() -> Response:
 
 
 @app.route('/urls', methods=['GET', 'POST'])
-def urls_get() -> Union[Response, str]:
+def get_urls() -> Union[Response, str]:
     """Handle URL submission and display the list of URLs.
 
     Returns:
@@ -81,7 +76,7 @@ def urls_get() -> Union[Response, str]:
     if request.method == 'POST':
         url_raw = request.form.get('url', '')
         url = clear_url(url_raw)
-        errors = validate(url)
+        errors = validate_url(url)
         if errors:
             flash(errors[0], 'danger')
             response = render_template(
@@ -103,7 +98,7 @@ def urls_get() -> Union[Response, str]:
         return redirect(url_for('url_get', id=url_id))
 
     if request.method == 'GET':
-        urls = repo.get_content()
+        urls = repo.get_urls()
         if urls is None:
             abort(400)
         return render_template(
@@ -113,7 +108,7 @@ def urls_get() -> Union[Response, str]:
 
 
 @app.route('/urls/<int:id>')
-def url_get(id: int) -> Union[Response, str]:
+def get_url(id: int) -> Union[Response, str]:
     """Display details for a specific URL.
 
     Args:
@@ -136,7 +131,7 @@ def url_get(id: int) -> Union[Response, str]:
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
-def checks_post(id: int) -> Response:
+def check_post(id: int) -> Response:
     """Perform a check on the specified URL.
 
     Args:
@@ -152,8 +147,8 @@ def checks_post(id: int) -> Response:
     url = req.get('name')
     response = requests.get(url)
     if not response.ok:
-        abort(403)
-    url_parsed = parse(response)
+        abort(404)
+    url_parsed = parse_url(response)
     url_parsed['url_id'] = id
     repo.save_checks(url_parsed)
     flash('Страница успешно проверена', 'success')

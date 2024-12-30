@@ -30,7 +30,7 @@ class UrlRepository:
             except Exception as e:
                 logging.warning(f"Error closing connection to database: {e}")
 
-    def get_content(self):
+    def get_urls(self):
         """Get the content of the URLs table."""
         with DatabaseCursor(self.db_url) as db_curs:
             sql = """

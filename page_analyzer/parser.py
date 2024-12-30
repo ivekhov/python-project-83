@@ -1,12 +1,10 @@
 from typing import Dict
-from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from validators.url import url as is_url
 
 
-def parse(response: requests.models.Response) -> Dict:
+def parse_url(response: requests.models.Response) -> Dict:
     """Parse the given response.
 
     Args:
@@ -41,35 +39,3 @@ def parse(response: requests.models.Response) -> Dict:
         'title': title_text,
         'description': meta_description_text
     }
-
-
-def validate(url: str) -> list[str]:
-    """Validate the given URL.
-
-    Args:
-        url (str): The URL to validate.
-
-    Returns:
-        list[str]: A list of validation error messages.
-    """
-    errors = []
-    if not is_url(url):
-        errors.append('Некорректный URL')
-        return errors
-    if len(url) > 255:
-        errors.append('URL превышает 255 символов')
-        return errors
-    return errors
-
-
-def clear_url(url: str) -> str:
-    """Remove from URL unnecessary info and leave only scheme and hostname.
-    
-    Args:
-        url (str): The URL to clear.
-
-    Returns:
-        str: A URL with scheme and hostname.
-    """
-    parsed = urlparse(url)
-    return f"{parsed.scheme}://{parsed.hostname}"

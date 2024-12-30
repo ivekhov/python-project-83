@@ -65,10 +65,46 @@ $ docker exec -it postgres-container psql -U postgres -d hexlet
 
 ----
 
-## Notes
+## Repo Example from Hexlet
 
-Улучшения, которые нужно предпринять:
+https://github.com/hexlet-components/python-flask-example/tree/database
 
-- [ ] Разделить код на логические модули.
-- [ ] Вспомни модуль "Работа с базой данных в Flask". Будет хорошо выделить репозиторий для работы с БД.
-- [ ] Подумай о создании собственного контекстного менеджера для работы с бд, а именно для создания подключения, курсора.
+
+
+-------------
+
+## Docker comamnds
+
+
+```bash
+
+# connect to postgres container and run psql shell for selects 
+$ docker exec -it postgres-container psql -U postgres -d hexlet
+
+# execute sql file from machine to docker container directly
+$ docker exec -it postgres-container psql -U postgres -d hexlet -f ./home/docker_database_init.sql
+
+# copy file to container
+$ docker cp docker_database_init.sql  postgres-container:/home/docker_database_init.sql
+
+# conect to container in bash mode
+$ docker exec -it postgres-container bash
+
+# run sql script inside contatiner
+$ psql -U postgres -d hexlet -f docker_database_init.sql
+
+```
+
+For uploading data from script inside docker : from machine to docker
+
+```sql
+-- in .sql file
+COPY urls(name) 
+FROM './tests/fixtures/database.csv' 
+DELIMITER ','
+CSV HEADER;
+```
+
+
+-------------
+

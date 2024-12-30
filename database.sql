@@ -6,16 +6,11 @@ CREATE TABLE urls (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO urls (name) VALUES 
-('https://www.google.com'),
-('https://www.yandex.ru'),
-('https://www.bing.com'),
-('https://www.yahoo.com'),
-('https://www.duckduckgo.com'),
-('https://www.ask.com'),
-('https://www.baidu.com'),
-('https://www.aol.com'),
-('https://www.wolframalpha.com');
+
+COPY urls(name) 
+FROM './tests/fixtures/database.csv' 
+DELIMITER ','
+CSV HEADER;
 
 
 DROP TABLE IF EXISTS url_checks;
