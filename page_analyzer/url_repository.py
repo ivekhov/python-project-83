@@ -127,6 +127,9 @@ class UrlRepository:
         """
         sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
         db_curs.execute(sql, (url,))
+        url_id = db_curs.fetchone()
+        url_id = url_id.get('id')
+        return url_id
 
     @with_cursor
     def get_checks(self, db_curs, id: int) -> Optional[tuple]:
