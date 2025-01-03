@@ -30,7 +30,7 @@ repo = UrlRepository(app.config['DATABASE_URL'])
 @app.errorhandler(404)
 def handle_http_exception(e):
     flash('Произошла ошибка при проверке', 'danger')
-    return redirect(url_for('index'))
+    return redirect(url_for('get_index'))
 
 
 @app.errorhandler(500)
@@ -41,7 +41,7 @@ def handle_server_error(e):
 
 
 @app.route('/', methods=['GET', 'POST'])
-def index() -> Response:
+def get_index() -> Response:
     """Render the index page.
 
     Returns:
@@ -88,10 +88,9 @@ def post_urls() -> Union[Response, str]:
         flash('Страница уже существует', 'info')
         url_id = result.get('id')
         return redirect(url_for('get_url', id=url_id))
-    repo.save_url(url)
+    url_id = repo.save_url(url)
     flash('Страница успешно добавлена', 'success')
 
-    url_id = repo.find_id(url).get('id')
     return redirect(
         url_for(
             'get_url',
