@@ -123,13 +123,10 @@ def check_post(id: int):
     try:
         response = requests.get(url)
         response.raise_for_status()
-
         if not response.ok:
             flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('get_url', id=id))
-
         status_code = response.status_code
-
         content = response.content
         url_parsed = parse_url(content)
         url_parsed['url_id'] = id
