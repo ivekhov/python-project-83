@@ -6,13 +6,6 @@ CREATE TABLE urls (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-
--- COPY urls(name) 
--- FROM './tests/fixtures/database.csv' 
--- DELIMITER ','
--- CSV HEADER;
-
-
 DROP TABLE IF EXISTS url_checks;
 
 CREATE TABLE url_checks (

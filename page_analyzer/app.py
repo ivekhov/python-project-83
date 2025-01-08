@@ -13,6 +13,7 @@ from flask import (
     request,
     url_for,
 )
+from requests import HTTPError
 
 from page_analyzer.parser import parse_url
 from page_analyzer.url_repository import UrlRepository
@@ -121,24 +122,24 @@ def check_post(id: int):
     
     try:
         response = requests.get(url)
-    except Exception:
-        abort(500, description={'url_id': id})
+        response.raise_for_status()
 
-    if not response.ok:
-        flash('Произошла ошибка при проверке', 'danger')
+        if not response.ok:
+            flash('Произошла ошибка при проверке', 'danger')
+            return redirect(url_for('get_url', id=id))
+
+        status_code = response.status_code
+
+        content = response.content
+        url_parsed = parse_url(content)
+        url_parsed['url_id'] = id
+        url_parsed['status_code'] = status_code
+
+        repo.save_checks(url_parsed)
+        flash('Страница успешно проверена', 'success')
         return redirect(url_for('get_url', id=id))
-
-    response.raise_for_status()
-    status_code = response.status_code
-
-    content = response.content
-    url_parsed = parse_url(content)
-    url_parsed['url_id'] = id
-    url_parsed['status_code'] = status_code
-
-    repo.save_checks(url_parsed)
-    flash('Страница успешно проверена', 'success')
-    return redirect(url_for('get_url', id=id))
+    except HTTPError:
+        abort(500, description={'url_id': id})
 
 
 if __name__ == "__main__":
