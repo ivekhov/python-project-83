@@ -12,7 +12,6 @@ packages = [
 python = "^3.10"
 flask = "^3.0.3"
 gunicorn = "^22.0.0"
-pytest = "^8.2.1"
 psycopg2-binary = "^2.9.10"
 validators = "^0.34.0"
 requests = "^2.32.3"
@@ -22,6 +21,7 @@ python-dotenv = "^1.0.1"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.1"
 pytest-cov = "^5.0.0"
+pytest = "^8.2.1"
 
 [build-system]
 requires = ["poetry-core"]
