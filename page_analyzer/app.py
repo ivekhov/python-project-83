@@ -36,9 +36,7 @@ def handle_http_exception(e):
 
 @app.errorhandler(500)
 def handle_server_error(e):
-    flash('Произошла ошибка при проверке', 'danger')
-    url_id = e.description.get('url_id')
-    return redirect(url_for('get_url', id=url_id)) 
+    return render_template('500.html'), 500
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -136,7 +134,8 @@ def check_post(id: int):
         flash('Страница успешно проверена', 'success')
         return redirect(url_for('get_url', id=id))
     except HTTPError:
-        abort(500, description={'url_id': id})
+        flash('Произошла ошибка при проверке', 'danger')
+        return redirect(url_for('get_url', id=id))
 
 
 if __name__ == "__main__":
