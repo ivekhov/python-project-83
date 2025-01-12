@@ -80,7 +80,7 @@ class UrlRepository:
         return db_curs.fetchone()
 
     @with_cursor
-    def find_url_details(self, db_curs, url_id: int) -> Optional[tuple]:
+    def get_url(self, db_curs, url_id: int) -> Optional[tuple]:
         """Find the details of a URL by ID.
 
         Args:
@@ -89,17 +89,9 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The details of the URL, or None if not found.
         """
-        sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
+        sql = "SELECT id as url_id, name, TO_CHAR(created_at, 'yyyy-mm-dd') as created_at FROM urls WHERE id = %s"
         db_curs.execute(sql, (url_id,))
-        url = db_curs.fetchone()
-        url = {
-            'url_id': url.get('id'),
-            'name': url.get('name'),
-            'created_at': datetime.strftime(
-                url.get('created_at'), '%Y-%m-%d'
-            )
-        }
-        return url
+        return db_curs.fetchone()
 
     @with_cursor
     def find_url(self, db_curs, url_id: int) -> Optional[tuple]:
@@ -128,8 +120,7 @@ class UrlRepository:
         sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
         db_curs.execute(sql, (url,))
         url_id = db_curs.fetchone()
-        url_id = url_id.get('id')
-        return url_id
+        return url_id.get('id')
 
     @with_cursor
     def get_checks(self, db_curs, url_id: int) -> Optional[tuple]:
@@ -156,7 +147,7 @@ class UrlRepository:
             urls_checks.append(
                 {
                     'check_id': check.get('id'),
-                    'url_id': id,
+                    'url_id': url_id,
                     'created_at': check.get('created_at'),
                     'status_code': check.get('status_code'),
                     'h1': check.get('h1'),

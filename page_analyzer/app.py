@@ -102,7 +102,7 @@ def post_urls() -> Union[Response, str]:
 @app.route('/urls/<int:url_id>')
 def get_url(url_id: int) -> Union[Response, str]:
     """Display details for a specific URL. """
-    url_details = repo.find_url_details(url_id)
+    url_details = repo.get_url(url_id)
     checks = repo.get_checks(url_id)
     return render_template(
         'show.html',

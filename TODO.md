@@ -52,6 +52,12 @@ https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81
 
 
 
+- [x] присваивать одной переменной подряд значения разных типов - плохая практика. Можно return url_id.get('id').
+https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/url_repository.py#L130-L131
+
+- [x] этот метод соответственно должен называться просто get_url и руками словарь создавать не надо, это сделает за тебя курсор
+https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/url_repository.py#L83
+
 
 
 

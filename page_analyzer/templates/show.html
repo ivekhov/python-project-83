@@ -46,7 +46,7 @@
     <tbody>
       {% for check in checks %}
       <tr>
-        <td>{{ check.url_id }}</td>
+        <td>{{ check.check_id }}</td>
         <td>{{ check.status_code }}</td>
         <td>{{ check.h1 if check.h1 else ''}}</td>
         <td>{{ check.title if check.title else ''}}</td>
