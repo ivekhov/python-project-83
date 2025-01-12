@@ -75,67 +75,69 @@ def post_urls() -> Union[Response, str]:
     url = clear_url(url_raw)
     errors = validate_url(url)
     if errors:
-        flash(errors[0], 'danger')
+        for error in errors:
+            flash(error, 'danger')
         response = render_template(
             'index.html',
             url=url_raw
         )
         return response, 422
-    result = repo.find_id(url)
+    url_id = repo.find_id(url)
 
-    if result:
+    if url_id:
         flash('Страница уже существует', 'info')
-        url_id = result.get('id')
-        return redirect(url_for('get_url', id=url_id))
+        url_id = url_id.get('id')
+        return redirect(url_for('get_url', url_id=url_id))
     url_id = repo.save_url(url)
     flash('Страница успешно добавлена', 'success')
 
     return redirect(
         url_for(
             'get_url',
-            id=url_id
+            url_id=url_id
         )
     )
 
 
-@app.route('/urls/<int:id>')
-def get_url(id: int) -> Union[Response, str]:
+@app.route('/urls/<int:url_id>')
+def get_url(url_id: int) -> Union[Response, str]:
     """Display details for a specific URL. """
-    url = repo.find_url_details(id)
-    urls_checks = repo.get_checks(id)
+    url_details = repo.find_url_details(url_id)
+    checks = repo.get_checks(url_id)
     return render_template(
         'show.html',
-        url=url,
-        urls_checks=urls_checks
+        url=url_details,
+        checks=checks
     )
 
 
-@app.route('/urls/<int:id>/checks', methods=['POST'])
-def check_post(id: int):
+@app.route('/urls/<int:url_id>/checks', methods=['POST'])
+def check_post(url_id: int):
     """Perform a check on the specified URL."""
-    req = repo.find_url(id)
-    if req is None:
+    url = repo.find_url(url_id)
+    if url is None:
         abort(404)
-    url = req.get('name')
+    url_name = url.get('name')
     
     try:
-        response = requests.get(url)
+        response = requests.get(url_name)
         response.raise_for_status()
         if not response.ok:
             flash('Произошла ошибка при проверке', 'danger')
-            return redirect(url_for('get_url', id=id))
+            return redirect(url_for('get_url', url_id=url_id))
         status_code = response.status_code
         content = response.content
-        url_parsed = parse_url(content)
-        url_parsed['url_id'] = id
-        url_parsed['status_code'] = status_code
+        content_parsed = parse_url(content)
+        content_parsed['url_id'] = url_id
+        content_parsed['status_code'] = status_code
 
-        repo.save_checks(url_parsed)
+        repo.save_checks(content_parsed)
+
         flash('Страница успешно проверена', 'success')
-        return redirect(url_for('get_url', id=id))
+        return redirect(url_for('get_url', url_id=url_id))
     except HTTPError:
         flash('Произошла ошибка при проверке', 'danger')
-        return redirect(url_for('get_url', id=id))
+        return redirect(url_for('get_url', url_id=url_id))
 
 
 if __name__ == "__main__":

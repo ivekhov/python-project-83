@@ -54,7 +54,7 @@ class UrlRepository:
             GROUP BY 1, 2
             ORDER BY 1 DESC
         ) SELECT
-            cte.id as id,
+            cte.id as url_id,
             cte.name as name,
             cte.last_checked as last_checked,
             cheks.status_code as status_code
@@ -80,39 +80,39 @@ class UrlRepository:
         return db_curs.fetchone()
 
     @with_cursor
-    def find_url_details(self, db_curs, id: int) -> Optional[tuple]:
+    def find_url_details(self, db_curs, url_id: int) -> Optional[tuple]:
         """Find the details of a URL by ID.
 
         Args:
-            id (int): The ID of the URL to find details for.
+            url_id (int): The ID of the URL to find details for.
 
         Returns:
             Optional[tuple]: The details of the URL, or None if not found.
         """
         sql = "SELECT id, name, created_at FROM urls WHERE id = %s"
-        db_curs.execute(sql, (id,))
+        db_curs.execute(sql, (url_id,))
         url = db_curs.fetchone()
         url = {
-            'id': url.get('id'),
+            'url_id': url.get('id'),
             'name': url.get('name'),
             'created_at': datetime.strftime(
                 url.get('created_at'), '%Y-%m-%d'
-                )
+            )
         }
         return url
 
     @with_cursor
-    def find_url(self, db_curs, id: int) -> Optional[tuple]:
+    def find_url(self, db_curs, url_id: int) -> Optional[tuple]:
         """Find the URL by ID.
 
         Args:
-            id (int): The ID of the URL to find.
+            url_id (int): The ID of the URL to find.
 
         Returns:
             Optional[tuple]: The URL, or None if not found.
         """
         sql = "SELECT name FROM urls WHERE id = %s"
-        db_curs.execute(sql, (id,))
+        db_curs.execute(sql, (url_id,))
         return db_curs.fetchone()
 
     @with_cursor
@@ -132,11 +132,11 @@ class UrlRepository:
         return url_id
 
     @with_cursor
-    def get_checks(self, db_curs, id: int) -> Optional[tuple]:
+    def get_checks(self, db_curs, url_id: int) -> Optional[tuple]:
         """Get the checks for a specific URL by ID.
 
         Args:
-            id (int): The ID of the URL to get checks for.
+            url_id (int): The ID of the URL to get checks for.
 
         Returns:
             Optional[tuple]: The checks for the URL, or None if not found.
@@ -149,13 +149,13 @@ class UrlRepository:
         WHERE url_id = %s AND status_code IS NOT NULL
         ORDER BY id DESC;
         """
-        db_curs.execute(sql, (id,))
+        db_curs.execute(sql, (url_id,))
         urls_raw = db_curs.fetchall()
         urls_checks = []
         for check in urls_raw:
             urls_checks.append(
                 {
-                    'id': check.get('id'),
+                    'check_id': check.get('id'),
                     'url_id': id,
                     'created_at': check.get('created_at'),
                     'status_code': check.get('status_code'),
