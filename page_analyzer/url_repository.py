@@ -1,6 +1,5 @@
 import functools
 import logging
-from datetime import datetime
 from typing import Optional
 
 import psycopg2
@@ -75,7 +74,7 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The ID of the URL, or None if not found.
         """
-        sql = "SELECT id FROM urls WHERE name = %s"
+        sql = "SELECT id FROM urls WHERE name = %s;"
         db_curs.execute(sql, (url,))
         return db_curs.fetchone()
 
@@ -89,7 +88,13 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The details of the URL, or None if not found.
         """
-        sql = "SELECT id as url_id, name, TO_CHAR(created_at, 'yyyy-mm-dd') as created_at FROM urls WHERE id = %s"
+        sql = """
+        SELECT 
+            id as url_id,
+            name,
+            TO_CHAR(created_at, 'yyyy-mm-dd') as created_at 
+        FROM urls WHERE id = %s;
+        """
         db_curs.execute(sql, (url_id,))
         return db_curs.fetchone()
 
@@ -103,7 +108,7 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The URL, or None if not found.
         """
-        sql = "SELECT name FROM urls WHERE id = %s"
+        sql = "SELECT name FROM urls WHERE id = %s;"
         db_curs.execute(sql, (url_id,))
         return db_curs.fetchone()
 
@@ -117,7 +122,7 @@ class UrlRepository:
         Returns:
             Optional[tuple]: The result of the insert , or None if failed.
         """
-        sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id"
+        sql = "INSERT INTO urls (name) VALUES (%s) RETURNING id;"
         db_curs.execute(sql, (url,))
         url_id = db_curs.fetchone()
         return url_id.get('id')
@@ -167,7 +172,7 @@ class UrlRepository:
         sql = """
         INSERT INTO url_checks
             (url_id, status_code, h1, title, description)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s);
         """
         db_curs.execute(sql, (
             url_data['url_id'],
