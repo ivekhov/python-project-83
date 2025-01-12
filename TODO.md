@@ -22,6 +22,13 @@ https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81
 https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/app.py#L89
 
 
+- [x] если метод возвращает url_details, то и переменную надо назвать, иначе непонятно что в ней лежит, толи обычная сущность url, толи что-то новое с дополнительной информацией.
+https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/app.py#L104
+
+
+- [x] не уверен как правильно с английской точки зрения, но обычно во множественное число ставят только второе существительное - url_checks. Но можно оставить и так.
+
+
 
 ---------
 
