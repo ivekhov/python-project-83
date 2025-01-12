@@ -103,35 +103,36 @@ def post_urls() -> Union[Response, str]:
 def get_url(url_id: int) -> Union[Response, str]:
     """Display details for a specific URL. """
     url_details = repo.find_url_details(url_id)
-    url_checks = repo.get_checks(url_id)
+    checks = repo.get_checks(url_id)
     return render_template(
         'show.html',
         url=url_details,
-        url_checks=url_checks
+        checks=checks
     )
 
 
 @app.route('/urls/<int:url_id>/checks', methods=['POST'])
 def check_post(url_id: int):
     """Perform a check on the specified URL."""
-    req = repo.find_url(url_id)
-    if req is None:
+    url = repo.find_url(url_id)
+    if url is None:
         abort(404)
-    url = req.get('name')
+    url_name = url.get('name')
     
     try:
-        response = requests.get(url)
+        response = requests.get(url_name)
         response.raise_for_status()
         if not response.ok:
             flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('get_url', url_id=url_id))
         status_code = response.status_code
         content = response.content
-        url_parsed = parse_url(content)
-        url_parsed['url_id'] = url_id
-        url_parsed['status_code'] = status_code
+        content_parsed = parse_url(content)
+        content_parsed['url_id'] = url_id
+        content_parsed['status_code'] = status_code
 
-        repo.save_checks(url_parsed)
+        repo.save_checks(content_parsed)
+
         flash('Страница успешно проверена', 'success')
         return redirect(url_for('get_url', url_id=url_id))
     except HTTPError:
