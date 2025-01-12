@@ -105,6 +105,23 @@ DELIMITER ','
 CSV HEADER;
 ```
 
+## Postgres local
+
+Starting service via pgadmin
+
+
+Connection to local postgres db 
+
+``` bash
+$ psql -U postgres -d page_analyzer 
+# pass in .env
+
+```
+
+
+
+
+
 
 -------------
 

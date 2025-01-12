@@ -75,7 +75,8 @@ def post_urls() -> Union[Response, str]:
     url = clear_url(url_raw)
     errors = validate_url(url)
     if errors:
-        flash(errors[0], 'danger')
+        for error in errors:
+            flash(error, 'danger')
         response = render_template(
             'index.html',
             url=url_raw
