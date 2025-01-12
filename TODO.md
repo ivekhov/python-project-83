@@ -11,11 +11,15 @@ https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81
 https://github.com/hexlet-components/python-flask-example/blob/d744dbed11ebd1fcfee86a44ea8e8e55c83b5a0f/example.py#L17
 
 
-
-- [!] тут ты всегда берешь только первую ошибку, но их может быть потом добавлено еще несколько. Лучше тут организовать цикл по errors и для каждой ошибки свой flash()
+- [x] тут ты всегда берешь только первую ошибку, но их может быть потом добавлено еще несколько. Лучше тут организовать цикл по errors и для каждой ошибки свой flash()
 https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/app.py#L78
 
+- [x] по названию переменной непонятно что в ней находится, result слишком общее слово.
+https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/app.py#L84
 
+
+- [x] id не самое удачное название для переменной оно перекрывает стандартную функцию id(). И тут не всегда из контекста понятно, что такое id. Лучше полностью назвать url_id
+https://github.com/ivekhov/python-project-83/blob/ca6373bb5f62616a7b80b666bcef81cc61a1287c/page_analyzer/app.py#L89
 
 
 

@@ -11,7 +11,7 @@
     <tbody>
       <tr>
         <td>ID</td>
-        <td>{{ url.id }}</td>
+        <td>{{ url.url_id }}</td>
       </tr>
       <tr>
         <td>Имя</td>
@@ -27,7 +27,7 @@
 </div>
 
 <h2 class="mt-5 mb-3">Проверки</h2>
-<form method="post" action="{{ url_for('check_post', id=url.id) }}"> 
+<form method="post" action="{{ url_for('check_post', url_id=url.url_id) }}"> 
   <input type="submit" class="btn btn-primary" value="Запустить проверку">
 </form>
 
@@ -46,7 +46,7 @@
     <tbody>
       {% for url_check in urls_checks %}
       <tr>
-        <td>{{ url_check.id }}</td>
+        <td>{{ url_check.url_id }}</td>
         <td>{{ url_check.status_code }}</td>
         <td>{{ url_check.h1 if url_check.h1 else ''}}</td>
         <td>{{ url_check.title if url_check.title else ''}}</td>
